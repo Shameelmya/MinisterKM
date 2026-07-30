@@ -1182,6 +1182,7 @@ Fields to output:
 - eventName: The name of the program, place, or person (e.g. "കല്യാണം- അഹമ്മദ്ക്ക, കോഴിക്കോട്").
 - contactNumber: The phone number if mentioned, else "".
 - time: The time in 24-hour format "HH:MM" if mentioned (e.g., 11:00 AM -> 11:00, 2:00 PM -> 14:00), else "".
+- date: The date in "YYYY-MM-DD" format if a specific date or day is mentioned (e.g., tomorrow, next saturday, 12th Aug). Today's date is ${new Date().toISOString().split('T')[0]}. If no date is mentioned, return "".
 
 User said: "${transcript}"`
             }]
@@ -1202,6 +1203,15 @@ User said: "${transcript}"`
       jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
       
       const parsedData = JSON.parse(jsonStr);
+      
+      // Auto-navigate to the date if AI detected one in the speech
+      if (parsedData.date) {
+        const [year, month, day] = parsedData.date.split('-');
+        if (year && month && day) {
+           setCurrentDate(new Date(year, month - 1, day));
+        }
+      }
+      
       setVoicePrefill(parsedData);
       openModal('#add', setIsAddOpen);
     } catch (error) {
@@ -1358,9 +1368,9 @@ User said: "${transcript}"`
             <div className="relative flex items-center justify-center">
               {isListening && (
                 <>
-                  <div className="absolute w-14 h-14 bg-red-500 rounded-full animate-ripple opacity-60"></div>
-                  <div className="absolute w-14 h-14 bg-red-500 rounded-full animate-ripple opacity-60" style={{ animationDelay: '0.6s' }}></div>
-                  <div className="absolute w-14 h-14 bg-red-500 rounded-full animate-ripple opacity-60" style={{ animationDelay: '1.2s' }}></div>
+                  <div className="absolute w-14 h-14 bg-red-500 rounded-full animate-ripple opacity-80"></div>
+                  <div className="absolute w-14 h-14 bg-red-500 rounded-full animate-ripple opacity-80" style={{ animationDelay: '0.4s' }}></div>
+                  <div className="absolute w-14 h-14 bg-red-500 rounded-full animate-ripple opacity-80" style={{ animationDelay: '0.8s' }}></div>
                 </>
               )}
               <button 
@@ -1369,7 +1379,7 @@ User said: "${transcript}"`
                 onPointerLeave={handlePointerUp}
                 disabled={isProcessingVoice}
                 style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
-                className={`relative z-10 flex items-center justify-center gap-2 text-white shadow-lg shadow-red-600/30 transition-all w-14 h-14 sm:w-auto sm:h-12 sm:px-6 rounded-full select-none ${isListening ? 'bg-red-600 scale-110' : isProcessingVoice ? 'bg-amber-400' : 'bg-red-600 hover:bg-red-700 hover:-translate-y-1'}`}
+                className={`relative z-10 flex items-center justify-center gap-2 text-white shadow-lg shadow-red-600/30 transition-all duration-300 w-14 h-14 sm:w-auto sm:h-12 sm:px-6 rounded-full select-none ${isListening ? 'bg-red-500 scale-110 animate-glow' : isProcessingVoice ? 'bg-amber-400' : 'bg-red-600 hover:bg-red-700 hover:-translate-y-1'}`}
               >
                 {isProcessingVoice ? (
                   <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
