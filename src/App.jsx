@@ -1521,15 +1521,15 @@ User said: "${transcript}"`
                       return (
                         <tr key={p.id} className="page-break-inside-avoid">
                           {printConfig.viewMode === 'schedule' && (
-                            <td className="pt-2 pb-4 px-4 font-bold text-lg text-black border border-stone-400 align-middle text-left whitespace-nowrap">{displayTime}</td>
+                            <td className="pt-2 pb-4 px-4 font-bold text-base text-black border border-stone-400 align-middle text-left whitespace-nowrap">{displayTime}</td>
                           )}
-                          <td className="pt-2 pb-4 px-4 align-middle text-left text-lg border border-stone-400 text-black">
+                          <td className="pt-2 pb-4 px-4 align-middle text-left text-base border border-stone-400 text-black">
                             {p.completed && (
                               <div className="mb-1.5">
                                 <span className="text-[9px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Completed</span>
                               </div>
                             )}
-                            <div className={p.completed ? "line-through text-stone-400 whitespace-pre-wrap" : "font-normal leading-relaxed whitespace-pre-wrap"}>
+                            <div className={p.completed ? "line-through text-stone-400 whitespace-pre-wrap leading-snug" : "font-normal leading-snug whitespace-pre-wrap"}>
                               {p.eventName}
                               {p.contactNumber && `\nMob: ${p.contactNumber}`}
                             </div>
