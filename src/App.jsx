@@ -1489,13 +1489,13 @@ User said: "${transcript}"`
 
             {/* Table Container */}
             <div className="mb-8">
-              <table className="w-full text-center border-collapse bg-white border border-stone-400">
+              <table className="w-full text-center border-separate border-spacing-0 bg-white border-t border-l border-stone-400">
                 <thead className="bg-[#4a3b32] text-white">
                   <tr>
                     {printConfig.viewMode === 'schedule' && (
-                      <th className="pt-1.5 pb-3 px-3 font-bold text-[12px] tracking-wide border border-stone-400 w-24 align-middle">Time</th>
+                      <th className="pt-1.5 pb-3 px-3 font-bold text-[12px] tracking-wide border-b border-r border-stone-400 w-24 align-middle">Time</th>
                     )}
-                    <th className="pt-1.5 pb-3 px-3 font-bold text-[12px] tracking-wide border border-stone-400 align-middle">
+                    <th className="pt-1.5 pb-3 px-3 font-bold text-[12px] tracking-wide border-b border-r border-stone-400 align-middle">
                       {printConfig.viewMode === 'schedule' ? 'Programme' : 'Description'}
                     </th>
                   </tr>
@@ -1503,7 +1503,7 @@ User said: "${transcript}"`
                 <tbody className="bg-white">
                   {printPrograms.length === 0 ? (
                     <tr>
-                      <td colSpan={printConfig.viewMode === 'schedule' ? "2" : "1"} className="p-8 text-center text-stone-500 font-medium border border-stone-400">
+                      <td colSpan={printConfig.viewMode === 'schedule' ? "2" : "1"} className="p-8 text-center text-stone-500 font-medium border-b border-r border-stone-400">
                         No entries scheduled for this day.
                       </td>
                     </tr>
@@ -1521,9 +1521,9 @@ User said: "${transcript}"`
                       return (
                         <tr key={p.id} className="page-break-inside-avoid">
                           {printConfig.viewMode === 'schedule' && (
-                            <td className="pt-2 pb-4 px-4 font-bold text-base text-black border border-stone-400 align-middle text-left whitespace-nowrap">{displayTime}</td>
+                            <td className="pt-2 pb-4 px-4 font-bold text-base text-black border-b border-r border-stone-400 align-middle text-left whitespace-nowrap">{displayTime}</td>
                           )}
-                          <td className="pt-2 pb-4 px-4 align-middle text-left text-base border border-stone-400 text-black">
+                          <td className="pt-2 pb-4 px-4 align-middle text-left text-base border-b border-r border-stone-400 text-black">
                             {p.completed && (
                               <div className="mb-1.5">
                                 <span className="text-[9px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Completed</span>
