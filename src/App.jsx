@@ -792,25 +792,36 @@ const ProgramCard = ({ program }) => {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        {showOptions && permissions.canEdit && (
-          <button 
-            onClick={(e) => { e.stopPropagation(); setEditProgram(program); setShowOptions(false); }}
-            className="p-2.5 sm:p-2 text-stone-500 hover:text-amber-700 hover:bg-amber-50 rounded-full transition-colors"
-            aria-label="Edit"
-          >
-            <IconEdit2 size={18} />
-          </button>
-        )}
-        
-        {showOptions && permissions.canDelete && (
-          <button 
-            onClick={(e) => { e.stopPropagation(); handleDeleteClick(); setShowOptions(false); }}
-            className="p-2.5 sm:p-2 rounded-full text-stone-500 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center"
-            aria-label="Delete"
-          >
-            <IconTrash2 size={18} />
-          </button>
+      <div className="flex items-center gap-2 flex-shrink-0 relative">
+        {showOptions && (
+          <>
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={(e) => { e.stopPropagation(); setShowOptions(false); }}
+              onPointerDown={(e) => { e.stopPropagation(); setShowOptions(false); }}
+            />
+            <div className="absolute right-12 top-1/2 -translate-y-1/2 z-50 bg-white rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-stone-200 py-1.5 flex flex-col w-32 animate-in fade-in zoom-in-95 duration-200">
+              {permissions.canEdit && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setEditProgram(program); setShowOptions(false); }}
+                  className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 w-full text-left transition-colors"
+                >
+                  <IconEdit2 size={16} className="text-amber-600" />
+                  <span className="font-medium text-[15px]">Edit</span>
+                </button>
+              )}
+              
+              {permissions.canDelete && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleDeleteClick(); setShowOptions(false); }}
+                  className="flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 w-full text-left transition-colors border-t border-stone-100"
+                >
+                  <IconTrash2 size={16} className="text-red-500" />
+                  <span className="font-medium text-[15px]">Delete</span>
+                </button>
+              )}
+            </div>
+          </>
         )}
         
         {permissions.canComplete && (
