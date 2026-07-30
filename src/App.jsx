@@ -1485,13 +1485,13 @@ User said: "${transcript}"`
 
             {/* Table Container */}
             <div className="mb-8">
-              <table className="w-full text-center border-collapse bg-white border border-black">
+              <table className="w-full text-center border-collapse bg-white border border-stone-400">
                 <thead className="bg-[#4a3b32] text-white">
                   <tr>
                     {printConfig.viewMode === 'schedule' && (
-                      <th className="pt-1.5 pb-3 px-3 font-bold text-[12px] tracking-wide border border-black w-24 align-middle">Time</th>
+                      <th className="pt-1.5 pb-3 px-3 font-bold text-[12px] tracking-wide border border-stone-400 w-24 align-middle">Time</th>
                     )}
-                    <th className="pt-1.5 pb-3 px-3 font-bold text-[12px] tracking-wide border border-black align-middle">
+                    <th className="pt-1.5 pb-3 px-3 font-bold text-[12px] tracking-wide border border-stone-400 align-middle">
                       {printConfig.viewMode === 'schedule' ? 'Programme' : 'Description'}
                     </th>
                   </tr>
@@ -1499,7 +1499,7 @@ User said: "${transcript}"`
                 <tbody className="bg-white">
                   {printPrograms.length === 0 ? (
                     <tr>
-                      <td colSpan={printConfig.viewMode === 'schedule' ? "2" : "1"} className="p-8 text-center text-stone-500 font-medium border border-black">
+                      <td colSpan={printConfig.viewMode === 'schedule' ? "2" : "1"} className="p-8 text-center text-stone-500 font-medium border border-stone-400">
                         No entries scheduled for this day.
                       </td>
                     </tr>
@@ -1517,9 +1517,9 @@ User said: "${transcript}"`
                       return (
                         <tr key={p.id} className="page-break-inside-avoid">
                           {printConfig.viewMode === 'schedule' && (
-                            <td className="pt-2 pb-4 px-4 font-bold text-lg text-black border border-black align-middle text-left whitespace-nowrap">{displayTime}</td>
+                            <td className="pt-2 pb-4 px-4 font-bold text-lg text-black border border-stone-400 align-middle text-left whitespace-nowrap">{displayTime}</td>
                           )}
-                          <td className="pt-2 pb-4 px-4 align-middle text-left text-lg border border-black text-black">
+                          <td className="pt-2 pb-4 px-4 align-middle text-left text-lg border border-stone-400 text-black">
                             {p.completed && (
                               <div className="mb-1.5">
                                 <span className="text-[9px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Completed</span>
