@@ -1088,8 +1088,8 @@ const MainApp = () => {
                 <img src="/minister.png" alt="Minister" className="w-full h-full object-cover" />
               </div>
               <div className="leading-tight">
-                <h1 className="font-semibold text-sm text-stone-900 tracking-tight">KM Shaji</h1>
-                <p className="text-[10px] text-stone-500 font-medium">LSGD Minister</p>
+                <h1 className="font-semibold text-sm text-stone-900 tracking-tight">Minister's Day</h1>
+                <p className="text-[10px] text-stone-500 font-medium">Schedule App</p>
               </div>
             </div>
 
@@ -1296,8 +1296,8 @@ const MainApp = () => {
         {/* PRINT VIEW */}
         <div className="hidden print:block print:bg-white print:text-black">
           <div className="print-header mb-8 text-center border-b-[3px] border-[#4a3b32] pb-4">
-            <h1 className="text-2xl font-bold uppercase tracking-widest mb-1 text-[#2d241f]">KM Shaji</h1>
-            <h2 className="text-lg font-semibold text-stone-600 mb-4">LSGD Minister, Kerala</h2>
+            <h1 className="text-2xl font-bold uppercase tracking-widest mb-1 text-[#2d241f]">Minister's Day</h1>
+            <h2 className="text-lg font-semibold text-stone-600 mb-4">Schedule Report</h2>
             <h3 className="text-xl font-bold border border-stone-300 inline-block px-6 py-2 bg-stone-50">
               {formatDate(currentDate)} – {printConfig.viewMode === 'todo' ? 'To-Do List' : 'Programme Schedule'}
             </h3>
