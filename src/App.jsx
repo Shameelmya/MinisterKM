@@ -1233,7 +1233,7 @@ User said: "${transcript}"`
               </div>
               <div className="leading-tight">
                 <h1 className="font-semibold text-sm text-stone-900 tracking-tight">Minister's Day</h1>
-                <p className="text-[10px] text-stone-500 font-medium">Schedule App</p>
+                <p className="text-[10px] text-stone-500 font-medium">KM Shaji . LSGD</p>
               </div>
             </div>
 
