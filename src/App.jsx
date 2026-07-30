@@ -1525,7 +1525,7 @@ User said: "${transcript}"`
                                 <span className="text-[9px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Completed</span>
                               </div>
                             )}
-                            <div className={p.completed ? "line-through text-stone-400" : "font-medium leading-relaxed"}>
+                            <div className={p.completed ? "line-through text-stone-400" : "font-normal leading-relaxed"}>
                               {p.eventName}
                               {p.contactNumber && ` - Mob: ${p.contactNumber}`}
                             </div>
