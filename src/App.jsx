@@ -1094,7 +1094,7 @@ const MainApp = () => {
         const html2pdf = (await import('html2pdf.js')).default;
         
         const opt = {
-          margin:       20,
+          margin:       15,
           filename:     `KM_Shaji_${config.viewMode === 'todo' ? 'ToDo' : 'Schedule'}_${dateStr}.pdf`,
           image:        { type: 'jpeg', quality: 1 },
           html2canvas:  { scale: 2, useCORS: true, logging: false },
@@ -1463,7 +1463,7 @@ User said: "${transcript}"`
 
         {/* PDF EXPORT CONTENT - HIDDEN BEHIND APP */}
         <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-[-50] overflow-hidden">
-          <div className="w-[800px] bg-white text-black p-12 font-sans" id="pdf-export-content">
+          <div className="w-[750px] mx-auto bg-white text-black p-8 font-sans" id="pdf-export-content">
             {/* Header */}
             <div className="mb-6 flex flex-col items-center border-b border-stone-200 pb-6">
               <h1 className="text-3xl font-bold tracking-tight text-stone-900 mb-1.5">KM Shaji</h1>
@@ -1489,20 +1489,17 @@ User said: "${transcript}"`
                 <thead className="bg-[#4a3b32] text-white border-black">
                   <tr>
                     {printConfig.viewMode === 'schedule' && (
-                      <th className="py-2.5 px-4 font-bold text-[11px] uppercase tracking-widest border border-black w-24">Time</th>
+                      <th className="py-2.5 px-4 font-bold text-[11px] uppercase tracking-widest border border-black w-28">Time</th>
                     )}
                     <th className="py-2.5 px-4 font-bold text-[11px] uppercase tracking-widest border border-black">
                       {printConfig.viewMode === 'schedule' ? 'Programme' : 'Description'}
-                    </th>
-                    <th className="py-2.5 px-4 font-bold text-[11px] uppercase tracking-widest border border-black w-48">
-                      {printConfig.viewMode === 'schedule' ? 'Contact' : 'Details'}
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white">
                   {printPrograms.length === 0 ? (
                     <tr>
-                      <td colSpan={printConfig.viewMode === 'schedule' ? "3" : "2"} className="py-8 text-center text-black font-medium border border-black">
+                      <td colSpan={printConfig.viewMode === 'schedule' ? "2" : "1"} className="py-8 text-center text-black font-medium border border-black">
                         No entries scheduled for this day.
                       </td>
                     </tr>
@@ -1528,12 +1525,13 @@ User said: "${transcript}"`
                                 <span className="text-[9px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Completed</span>
                               </div>
                             )}
-                            <span className={p.completed ? "line-through text-stone-400" : "font-semibold leading-relaxed"}>{p.eventName}</span>
-                          </td>
-                          <td className="py-2.5 px-4 align-middle text-sm font-medium text-black border border-black">
-                            {p.contactNumber && <div className="flex items-center justify-center gap-1.5"><span className="text-black font-bold">Ph:</span> <span>{p.contactNumber}</span></div>}
-                            {p.type === 'todo' && p.link && <div className="font-normal break-all mt-1">{p.link}</div>}
-                            {!p.contactNumber && (!p.link || p.type !== 'todo') && <span>—</span>}
+                            <div className="flex flex-col items-center justify-center">
+                              <span className={p.completed ? "line-through text-stone-400" : "font-semibold leading-relaxed"}>
+                                {p.eventName}
+                                {p.contactNumber && ` - Mob: ${p.contactNumber}`}
+                              </span>
+                              {p.type === 'todo' && p.link && <span className="font-normal break-all mt-1">{p.link}</span>}
+                            </div>
                           </td>
                         </tr>
                       );
