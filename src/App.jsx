@@ -341,7 +341,14 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
             <div className="flex-1">
               <select
                 value={hour}
-                onChange={(e) => setHour(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setHour(val);
+                  if (val) {
+                    if (!minute) setMinute('00');
+                    if (!ampm) setAmpm('AM');
+                  }
+                }}
                 className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-[#4a3b32] focus:ring-1 focus:ring-[#4a3b32] outline-none bg-white appearance-none text-stone-700"
               >
                 <option value="">Hr</option>
