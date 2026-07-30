@@ -1467,7 +1467,7 @@ User said: "${transcript}"`
             {/* Header */}
             <div className="mb-6 flex flex-col items-center border-b border-stone-200 pb-6">
               <h1 className="text-3xl font-bold tracking-tight text-stone-900 mb-1.5">KM Shaji</h1>
-              <h2 className="text-sm font-bold text-stone-600 uppercase tracking-widest mb-4">Hon LSG Department Minister</h2>
+              <h2 className="text-base font-normal text-stone-600 mb-4">Hon. LSG Department Minister</h2>
               
               <h3 className="text-lg font-bold text-stone-900">
                 {printConfig.viewMode === 'todo' ? 'To-Do List' : 'Programme Schedule'} • {formatDate(currentDate)}
