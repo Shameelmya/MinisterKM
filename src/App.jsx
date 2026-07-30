@@ -123,36 +123,34 @@ const LoginCover = () => {
   };
 
   const roleLabels = {
-    [ROLES.PS_EDIT]: 'PS Edit Access',
-    [ROLES.PS_VIEW]: 'PS View Only'
+    [ROLES.PS_EDIT]: 'Admin',
+    [ROLES.PS_VIEW]: 'View Only'
   };
 
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-6 print:hidden">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border border-stone-200">
-        <div className="bg-[#4a3b32] p-10 text-center text-stone-50">
-          <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner overflow-hidden border-4 border-white/20">
+        <div className="bg-[#4a3b32] pt-16 pb-12 px-10 text-center text-stone-50">
+          <div className="w-32 h-32 rounded-full flex items-center justify-center mx-auto shadow-[0_0_40px_rgba(0,0,0,0.3)] overflow-hidden border-[6px] border-white/10">
             <img src="/minister.png" alt="Minister" className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white">Minister Schedule</h1>
-          <p className="text-amber-100 mt-2 text-sm font-medium">KM Shaji</p>
-          <p className="text-amber-200/70 text-xs mt-1">LSGD Minister, Kerala</p>
         </div>
         
-        <div className="p-8">
+        <div className="p-6 pb-8">
           {!selectedRole ? (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-sm font-semibold text-stone-500 uppercase tracking-wider mb-4 text-center">Select Role</h2>
-              {Object.entries(roleLabels).map(([role, label]) => (
-                <button
-                  key={role}
-                  onClick={() => setSelectedRole(role)}
-                  className="w-full py-4 px-6 text-left rounded-xl border border-stone-200 hover:border-amber-700 hover:bg-stone-50 transition-all font-medium text-stone-800 flex justify-between items-center group"
-                >
-                  {label}
-                  <IconChevronRight size={18} className="text-stone-400 group-hover:text-amber-800 transition-colors" />
-                </button>
-              ))}
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h2 className="text-sm font-semibold text-stone-500 uppercase tracking-wider mb-5 text-center">Select Role</h2>
+              <div className="grid grid-cols-2 gap-4">
+                {Object.entries(roleLabels).map(([role, label]) => (
+                  <button
+                    key={role}
+                    onClick={() => setSelectedRole(role)}
+                    className="w-full py-4 px-2 text-center rounded-xl border border-stone-200 hover:border-amber-700 hover:bg-stone-50 transition-all font-medium text-stone-800 flex justify-center items-center group shadow-sm hover:shadow-md"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           ) : (
             <form onSubmit={handleLogin} className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
