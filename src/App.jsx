@@ -1463,7 +1463,7 @@ User said: "${transcript}"`
 
         {/* PDF EXPORT CONTENT - HIDDEN BEHIND APP */}
         <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-[-50] overflow-hidden">
-          <div className="w-[750px] mx-auto bg-white text-black p-8 font-sans" id="pdf-export-content">
+          <div className="w-[640px] mx-auto bg-white text-black p-8 font-sans" id="pdf-export-content">
             {/* Header */}
             <div className="mb-6 flex flex-col items-center border-b border-stone-200 pb-6">
               <h1 className="text-3xl font-bold tracking-tight text-stone-900 mb-1.5">KM Shaji</h1>
@@ -1485,21 +1485,21 @@ User said: "${transcript}"`
 
             {/* Table Container */}
             <div className="mb-8">
-              <table className="w-full text-center border-collapse bg-white">
+              <table className="w-full text-center border-collapse bg-white border border-black">
                 <thead className="bg-[#4a3b32] text-white border-black">
                   <tr>
                     {printConfig.viewMode === 'schedule' && (
-                      <th className="py-2.5 px-4 font-bold text-[11px] uppercase tracking-widest border border-black w-28">Time</th>
+                      <th className="p-3 font-bold text-[11px] uppercase tracking-widest border border-black w-24 align-middle">Time</th>
                     )}
-                    <th className="py-2.5 px-4 font-bold text-[11px] uppercase tracking-widest border border-black">
+                    <th className="p-3 font-bold text-[11px] uppercase tracking-widest border border-black align-middle">
                       {printConfig.viewMode === 'schedule' ? 'Programme' : 'Description'}
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white">
+                <tbody className="bg-white border-black">
                   {printPrograms.length === 0 ? (
                     <tr>
-                      <td colSpan={printConfig.viewMode === 'schedule' ? "2" : "1"} className="py-8 text-center text-black font-medium border border-black">
+                      <td colSpan={printConfig.viewMode === 'schedule' ? "2" : "1"} className="p-8 text-center text-black font-medium border border-black">
                         No entries scheduled for this day.
                       </td>
                     </tr>
@@ -1517,21 +1517,19 @@ User said: "${transcript}"`
                       return (
                         <tr key={p.id} className="page-break-inside-avoid">
                           {printConfig.viewMode === 'schedule' && (
-                            <td className="py-2.5 px-4 font-bold text-sm text-black border border-black align-middle whitespace-nowrap">{displayTime}</td>
+                            <td className="p-4 font-bold text-sm text-black border border-black align-middle text-center whitespace-nowrap">{displayTime}</td>
                           )}
-                          <td className="py-2.5 px-4 align-middle text-sm border border-black text-black">
+                          <td className="p-4 align-middle text-center text-sm border border-black text-black">
                             {p.completed && (
-                              <div className="mb-1">
+                              <div className="mb-1.5">
                                 <span className="text-[9px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Completed</span>
                               </div>
                             )}
-                            <div className="flex flex-col items-center justify-center">
-                              <span className={p.completed ? "line-through text-stone-400" : "font-semibold leading-relaxed"}>
-                                {p.eventName}
-                                {p.contactNumber && ` - Mob: ${p.contactNumber}`}
-                              </span>
-                              {p.type === 'todo' && p.link && <span className="font-normal break-all mt-1">{p.link}</span>}
+                            <div className={p.completed ? "line-through text-stone-400" : "font-semibold leading-relaxed"}>
+                              {p.eventName}
+                              {p.contactNumber && ` - Mob: ${p.contactNumber}`}
                             </div>
+                            {p.type === 'todo' && p.link && <div className="font-normal break-all mt-1">{p.link}</div>}
                           </td>
                         </tr>
                       );
