@@ -54,6 +54,10 @@ const IconLink = ({ size = 20, className = "" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
 );
 
+const IconMic = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+);
+
 const firebaseConfig = {
   apiKey: "AIzaSyB-944yLcCXCT_ZPuvsSTRroNV-Gxdiw3c",
   authDomain: "km-shaji-diary.firebaseapp.com",
@@ -237,6 +241,81 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
   const [link, setLink] = useState(initialData?.link || '');
   const [priority, setPriority] = useState(initialData?.priority || 'medium');
 
+  const [isRecording, setIsRecording] = useState(false);
+  const isRecordingRef = React.useRef(false);
+  const recognitionRef = React.useRef(null);
+  
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
+  const handlePointerDown = (e) => {
+    e.preventDefault();
+    if (isRecordingRef.current) return;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice recognition is not supported in this browser.");
+      return;
+    }
+
+    isRecordingRef.current = true;
+    setIsRecording(true);
+
+    const startRecognition = () => {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'ml-IN';
+
+      recognitionRef.current.onresult = (event) => {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          }
+        }
+        if (finalTranscript) {
+          setEventName(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + finalTranscript);
+        }
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+      };
+
+      recognitionRef.current.onend = () => {
+        if (isRecordingRef.current) {
+          try { startRecognition(); } catch(e) {}
+        }
+      };
+
+      try {
+        recognitionRef.current.start();
+      } catch(e) {
+        console.error(e);
+      }
+    };
+
+    startRecognition();
+  };
+
+  const handlePointerUp = (e) => {
+    e.preventDefault();
+    if (!isRecordingRef.current) return;
+    
+    isRecordingRef.current = false;
+    setIsRecording(false);
+    
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!eventName.trim()) return;
@@ -350,14 +429,41 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
         <label className="block text-sm font-medium text-stone-700 mb-1.5">
           {entryMode === 'schedule' ? 'Programme / Event Name' : 'Description'} <span className="text-red-500">*</span>
         </label>
-        <textarea
-          value={eventName}
-          onChange={(e) => setEventName(e.target.value)}
-          required
-          rows={3}
-          className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-[#4a3b32] focus:ring-1 focus:ring-[#4a3b32] outline-none transition-all resize-none"
-          placeholder="Enter details in English or Malayalam..."
-        />
+        <div className="relative">
+          <textarea
+            value={eventName}
+            onChange={(e) => setEventName(e.target.value)}
+            required
+            rows={4}
+            className="w-full px-4 py-3 pr-16 rounded-xl border border-stone-200 focus:border-[#4a3b32] focus:ring-1 focus:ring-[#4a3b32] outline-none transition-all resize-none"
+            placeholder="Enter details in English or Malayalam... (Hold mic to speak)"
+          />
+          
+          <div className="absolute right-3 bottom-3 flex items-center justify-center">
+            {isRecording && (
+              <>
+                <div className="absolute inset-0 bg-red-500/20 rounded-full animate-blob-1 pointer-events-none scale-150"></div>
+                <div className="absolute inset-0 bg-red-500/20 rounded-full animate-blob-2 pointer-events-none scale-[1.7]"></div>
+                <div className="absolute inset-0 border-2 border-red-500/50 rounded-full animate-ripple pointer-events-none"></div>
+              </>
+            )}
+            
+            <button
+              type="button"
+              onPointerDown={handlePointerDown}
+              onPointerUp={handlePointerUp}
+              onPointerLeave={handlePointerUp}
+              onContextMenu={(e) => e.preventDefault()}
+              className={`relative z-10 p-3 rounded-full flex items-center justify-center transition-all duration-300 touch-none select-none ${
+                isRecording 
+                  ? 'bg-red-500 text-white shadow-lg animate-glow scale-110' 
+                  : 'bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-[#4a3b32]'
+              }`}
+            >
+              <IconMic size={20} className={isRecording ? 'animate-pulse' : ''} />
+            </button>
+          </div>
+        </div>
       </div>
 
       <div>
