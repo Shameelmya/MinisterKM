@@ -1089,8 +1089,7 @@ const MainApp = () => {
       try {
         const element = document.getElementById('pdf-export-content');
         if (!element) return;
-        
-        element.classList.remove('hidden'); // Ensure it's in the DOM explicitly for html2pdf
+
         
         const html2pdf = (await import('html2pdf.js')).default;
         
@@ -1103,8 +1102,6 @@ const MainApp = () => {
         };
         
         await html2pdf().from(element).set(opt).save();
-        
-        element.classList.add('hidden'); // Hide it again
       } catch (err) {
         console.error("PDF Export failed:", err);
       } finally {
@@ -1464,93 +1461,95 @@ User said: "${transcript}"`
           </div>
         </Modal>
 
-        {/* PDF EXPORT CONTENT - HIDDEN FROM SCREEN */}
-        <div className="absolute top-0 left-0 w-[800px] bg-white text-black p-12 font-sans hidden z-[-50]" id="pdf-export-content">
-          {/* Header */}
-          <div className="mb-8 flex flex-col items-center border-b border-gray-200 pb-8">
-            <h1 className="text-4xl font-semibold tracking-wide text-gray-900 mb-2">KM Shaji</h1>
-            <h2 className="text-base font-medium text-gray-500 uppercase tracking-[0.2em] mb-5">LSGD Minister, Keralam</h2>
-            
-            <div className="px-6 py-2 bg-gray-50 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-medium text-gray-800">
-                {printConfig.viewMode === 'todo' ? 'To-Do List' : 'Programme Schedule'} • {formatDate(currentDate)}
-              </h3>
+        {/* PDF EXPORT CONTENT - HIDDEN BEHIND APP */}
+        <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-[-50] overflow-hidden">
+          <div className="w-[800px] bg-white text-black p-12 font-sans" id="pdf-export-content">
+            {/* Header */}
+            <div className="mb-8 flex flex-col items-center border-b-2 border-stone-300 pb-8">
+              <h1 className="text-4xl font-semibold tracking-wide text-stone-900 mb-2">KM Shaji</h1>
+              <h2 className="text-base font-bold text-stone-500 uppercase tracking-[0.2em] mb-5">LSGD Minister, Keralam</h2>
+              
+              <div className="px-6 py-2 bg-stone-100 rounded-lg border border-stone-300">
+                <h3 className="text-lg font-bold text-stone-800">
+                  {printConfig.viewMode === 'todo' ? 'To-Do List' : 'Programme Schedule'} • {formatDate(currentDate)}
+                </h3>
+              </div>
+              
+              {(printConfig.timeFilter !== 'all' || printConfig.priorityFilter !== 'all') && (
+                <p className="text-xs text-stone-400 mt-4 font-bold uppercase tracking-wider">
+                  Filtered: 
+                  {printConfig.timeFilter !== 'all' && printConfig.viewMode === 'schedule' && ` ${printConfig.timeFilter === 'am' ? 'Morning Only' : 'Afternoon Only'}`}
+                  {printConfig.timeFilter !== 'all' && printConfig.priorityFilter !== 'all' && printConfig.viewMode === 'schedule' && ' | '}
+                  {printConfig.priorityFilter !== 'all' && ` ${printConfig.priorityFilter.charAt(0).toUpperCase() + printConfig.priorityFilter.slice(1)} Priority Only`}
+                </p>
+              )}
+            </div>
+
+            {/* Table Container */}
+            <div className="rounded-xl border-2 border-stone-400 overflow-hidden mb-8">
+              <table className="w-full text-left border-collapse bg-white">
+                <thead className="bg-stone-100">
+                  <tr>
+                    {printConfig.viewMode === 'schedule' && (
+                      <th className="py-4 px-6 font-bold text-xs uppercase tracking-wider text-stone-700 border border-stone-300 w-32">Time</th>
+                    )}
+                    <th className="py-4 px-6 font-bold text-xs uppercase tracking-wider text-stone-700 border border-stone-300">
+                      {printConfig.viewMode === 'schedule' ? 'Programme' : 'Description'}
+                    </th>
+                    <th className="py-4 px-6 font-bold text-xs uppercase tracking-wider text-stone-700 border border-stone-300 w-56">
+                      {printConfig.viewMode === 'schedule' ? 'Contact' : 'Details'}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white">
+                  {printPrograms.length === 0 ? (
+                    <tr>
+                      <td colSpan={printConfig.viewMode === 'schedule' ? "3" : "2"} className="py-12 text-center text-stone-400 font-medium border border-stone-300">
+                        No entries scheduled for this day.
+                      </td>
+                    </tr>
+                  ) : (
+                    printPrograms.map(p => {
+                      let displayTime = "—";
+                      if (p.time && p.type !== 'todo') {
+                        const [h, m] = p.time.split(':');
+                        const hour = parseInt(h, 10);
+                        const ampm = hour >= 12 ? 'PM' : 'AM';
+                        const displayHour = hour % 12 || 12;
+                        displayTime = `${displayHour}:${m} ${ampm}`;
+                      }
+
+                      return (
+                        <tr key={p.id} className="page-break-inside-avoid">
+                          {printConfig.viewMode === 'schedule' && (
+                            <td className="py-5 px-6 font-bold text-sm text-stone-800 border border-stone-300 align-top whitespace-nowrap">{displayTime}</td>
+                          )}
+                          <td className="py-5 px-6 align-top text-sm border border-stone-300">
+                            {p.completed && (
+                              <div className="mb-1.5">
+                                <span className="text-[9px] bg-stone-200 text-stone-700 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Completed</span>
+                              </div>
+                            )}
+                            <span className={p.completed ? "line-through text-stone-400" : "font-semibold text-stone-900 leading-relaxed"}>{p.eventName}</span>
+                          </td>
+                          <td className="py-5 px-6 align-top text-sm font-semibold text-stone-700 border border-stone-300">
+                            {p.contactNumber && <div className="flex items-center gap-1.5"><span className="text-stone-400">Ph:</span> <span className="text-stone-800">{p.contactNumber}</span></div>}
+                            {p.type === 'todo' && p.link && <div className="text-stone-500 font-normal break-all mt-1">{p.link}</div>}
+                            {!p.contactNumber && (!p.link || p.type !== 'todo') && <span className="text-stone-300">—</span>}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
             
-            {(printConfig.timeFilter !== 'all' || printConfig.priorityFilter !== 'all') && (
-              <p className="text-xs text-gray-400 mt-4 font-medium uppercase tracking-wider">
-                Filtered: 
-                {printConfig.timeFilter !== 'all' && printConfig.viewMode === 'schedule' && ` ${printConfig.timeFilter === 'am' ? 'Morning Only' : 'Afternoon Only'}`}
-                {printConfig.timeFilter !== 'all' && printConfig.priorityFilter !== 'all' && printConfig.viewMode === 'schedule' && ' | '}
-                {printConfig.priorityFilter !== 'all' && ` ${printConfig.priorityFilter.charAt(0).toUpperCase() + printConfig.priorityFilter.slice(1)} Priority Only`}
-              </p>
-            )}
-          </div>
-
-          {/* Table Container */}
-          <div className="rounded-xl border border-gray-300 overflow-hidden mb-8">
-            <table className="w-full text-left border-collapse bg-white">
-              <thead className="bg-gray-50 border-b border-gray-300">
-                <tr>
-                  {printConfig.viewMode === 'schedule' && (
-                    <th className="py-4 px-6 font-semibold text-xs uppercase tracking-wider text-gray-600 border-r border-gray-200 w-32">Time</th>
-                  )}
-                  <th className="py-4 px-6 font-semibold text-xs uppercase tracking-wider text-gray-600 border-r border-gray-200">
-                    {printConfig.viewMode === 'schedule' ? 'Programme' : 'Description'}
-                  </th>
-                  <th className="py-4 px-6 font-semibold text-xs uppercase tracking-wider text-gray-600 w-56">
-                    {printConfig.viewMode === 'schedule' ? 'Contact' : 'Details'}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {printPrograms.length === 0 ? (
-                  <tr>
-                    <td colSpan={printConfig.viewMode === 'schedule' ? "3" : "2"} className="py-12 text-center text-gray-400 font-medium">
-                      No entries scheduled for this day.
-                    </td>
-                  </tr>
-                ) : (
-                  printPrograms.map(p => {
-                    let displayTime = "—";
-                    if (p.time && p.type !== 'todo') {
-                      const [h, m] = p.time.split(':');
-                      const hour = parseInt(h, 10);
-                      const ampm = hour >= 12 ? 'PM' : 'AM';
-                      const displayHour = hour % 12 || 12;
-                      displayTime = `${displayHour}:${m} ${ampm}`;
-                    }
-
-                    return (
-                      <tr key={p.id} className="page-break-inside-avoid">
-                        {printConfig.viewMode === 'schedule' && (
-                          <td className="py-5 px-6 font-medium text-sm text-gray-800 border-r border-gray-200 align-top whitespace-nowrap">{displayTime}</td>
-                        )}
-                        <td className="py-5 px-6 align-top text-sm border-r border-gray-200">
-                          {p.completed && (
-                            <div className="mb-1.5">
-                              <span className="text-[9px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Completed</span>
-                            </div>
-                          )}
-                          <span className={p.completed ? "line-through text-gray-400" : "font-medium text-gray-900 leading-relaxed"}>{p.eventName}</span>
-                        </td>
-                        <td className="py-5 px-6 align-top text-sm font-medium text-gray-600">
-                          {p.contactNumber && <div className="flex items-center gap-1.5"><span className="text-gray-400">Ph:</span> <span className="text-gray-800">{p.contactNumber}</span></div>}
-                          {p.type === 'todo' && p.link && <div className="text-gray-500 font-normal break-all mt-1">{p.link}</div>}
-                          {!p.contactNumber && (!p.link || p.type !== 'todo') && <span className="text-gray-300">—</span>}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-          
-          {/* Footer */}
-          <div className="pt-4 border-t border-gray-200 flex justify-between items-center text-[10px] text-gray-400 uppercase tracking-widest">
-            <span>Official Schedule Document</span>
-            <span>Generated on {new Date().toLocaleString('en-IN')}</span>
+            {/* Footer */}
+            <div className="pt-4 border-t-2 border-stone-200 text-[10px] text-stone-400 uppercase tracking-widest relative h-8">
+              <span className="absolute left-0 top-4">Official Schedule Document</span>
+              <span className="absolute right-0 top-4">Generated on {new Date().toLocaleString('en-IN')}</span>
+            </div>
           </div>
         </div>
 
