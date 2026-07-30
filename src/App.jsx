@@ -634,7 +634,6 @@ const PrintModal = ({ isOpen, onClose, onPrint, canViewPriority, viewMode }) => 
 const ProgramCard = ({ program }) => {
   const { permissions, deleteProgram, toggleCompletion, setEditProgram } = useContext(AppContext);
   const [isUpdating, setIsUpdating] = useState(false);
-  const { deleteProgram, toggleCompletion } = useContext(ProgramContext);
 
   const handleToggle = async () => {
     if (!permissions.canComplete) return;
