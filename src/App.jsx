@@ -1228,7 +1228,7 @@ const MainApp = () => {
                </div>
                
                {/* View Toggle */}
-               <div className="flex items-center bg-stone-100 p-1 rounded-full border border-stone-200">
+               <div className="hidden sm:flex items-center bg-stone-100 p-1 rounded-full border border-stone-200">
                   <button 
                     onClick={() => setViewMode('schedule')} 
                     className={`px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-all ${viewMode === 'schedule' ? 'bg-white shadow-sm text-[#4a3b32]' : 'text-stone-500 hover:text-stone-700'}`}
@@ -1328,9 +1328,13 @@ const MainApp = () => {
         {/* Mobile Bottom Navigation */}
         <nav className="fixed bottom-0 w-full bg-white border-t border-stone-200 pb-safe sm:hidden z-30 print:hidden shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
           <div className="flex justify-around items-center h-16">
-            <button onClick={() => { window.scrollTo(0, 0); setViewMode('schedule'); }} className={`flex flex-col items-center justify-center w-full h-full ${viewMode === 'schedule' ? 'text-[#4a3b32]' : 'text-[#8a7f78]'}`}>
+            <button onClick={() => { window.scrollTo(0, 0); setViewMode('schedule'); }} className={`flex flex-col items-center justify-center w-full h-full ${viewMode === 'schedule' ? 'text-[#4a3b32]' : 'text-[#8a7f78] hover:text-[#3a2e26]'}`}>
               <IconBookOpen size={20} className="mb-1" />
               <span className="text-[10px] font-semibold">Diary</span>
+            </button>
+            <button onClick={() => { window.scrollTo(0, 0); setViewMode('todo'); }} className={`flex flex-col items-center justify-center w-full h-full ${viewMode === 'todo' ? 'text-[#4a3b32]' : 'text-[#8a7f78] hover:text-[#3a2e26]'}`}>
+              <IconCheckCircle size={20} className="mb-1" />
+              <span className="text-[10px] font-semibold">To-Do</span>
             </button>
             <button onClick={() => setIsCalendarOpen(true)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26]">
               <IconCalendar size={20} className="mb-1" />
