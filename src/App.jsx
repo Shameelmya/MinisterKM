@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, useMemo, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, initializeFirestore, persistentLocalCache, collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, persistentLocalCache, collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 
 const IconCalendar = ({ size = 20, className = "" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
@@ -911,32 +911,30 @@ const MainApp = () => {
   };
   const programs = programsCache[dateStr] || [];
 
-  const fetchPrograms = async (dateKey, forceRefresh = false) => {
-    if (!forceRefresh && programsCache[dateKey]) {
-      setIsLoading(false);
-      return; 
-    }
-    
-    if (forceRefresh) setIsRefreshing(true);
-    else setIsLoading(true);
-    
-    try {
-      const q = query(collection(db, 'programs'), where('date', '==', dateKey));
-      const snapshot = await getDocs(q);
+  useEffect(() => {
+    setIsLoading(true);
+    const q = query(collection(db, 'programs'), where('date', '==', dateStr));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = [];
       snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-      setProgramsCache(prev => ({ ...prev, [dateKey]: data }));
-    } catch (err) {
-      console.error("Firestore error:", err);
-    } finally {
+      setProgramsCache(prev => ({ ...prev, [dateStr]: data }));
       setIsLoading(false);
       setIsRefreshing(false);
+    }, (err) => {
+      console.error("Firestore error:", err);
+      setIsLoading(false);
+      setIsRefreshing(false);
+    });
+    
+    return () => unsubscribe();
+  }, [dateStr]);
+
+  const fetchPrograms = (dateKey, forceRefresh = false) => {
+    if (forceRefresh) {
+      setIsRefreshing(true);
+      setTimeout(() => setIsRefreshing(false), 500);
     }
   };
-
-  useEffect(() => {
-    fetchPrograms(dateStr);
-  }, [dateStr]);
 
   const displayPrograms = useMemo(() => {
     // First filter by active view mode
