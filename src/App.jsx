@@ -340,22 +340,15 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
       {/* Custom Time Selection (Only for Schedule) */}
       {entryMode === 'schedule' && (
         <div className="animate-in fade-in duration-300">
-          <label className="block text-sm font-medium text-stone-700 mb-2">Time <span className="text-stone-400 font-normal">(Optional)</span></label>
+          <label className="block text-sm font-medium text-stone-700 mb-2">Time <span className="text-red-500">*</span></label>
           <div className="flex gap-3">
             <div className="flex-1">
               <select
                 value={hour}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setHour(val);
-                  if (val) {
-                    if (!minute) setMinute('00');
-                    if (!ampm) setAmpm('AM');
-                  }
-                }}
+                onChange={(e) => setHour(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-[#4a3b32] focus:ring-1 focus:ring-[#4a3b32] outline-none bg-white appearance-none text-stone-700"
+                required
               >
-                <option value="">Hr</option>
                 {hours.map(h => <option key={h} value={h}>{h}</option>)}
               </select>
             </div>
@@ -365,8 +358,8 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
                 value={minute}
                 onChange={(e) => setMinute(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-[#4a3b32] focus:ring-1 focus:ring-[#4a3b32] outline-none bg-white appearance-none text-stone-700"
+                required
               >
-                <option value="">Min</option>
                 {minutes.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
