@@ -1098,7 +1098,7 @@ const MainApp = () => {
           margin:       10,
           filename:     `KM_Shaji_${config.viewMode === 'todo' ? 'ToDo' : 'Schedule'}_${dateStr}.pdf`,
           image:        { type: 'jpeg', quality: 1 },
-          html2canvas:  { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+          html2canvas:  { scale: 2, useCORS: true, logging: false },
           jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         
@@ -1317,7 +1317,7 @@ User said: "${transcript}"`
             {permissions.canViewPriority && displayPrograms.length > 0 && viewMode === 'schedule' && (
               <button
                 onClick={() => setSortBy(prev => prev === 'time' ? 'priority' : 'time')}
-                className="flex items-center px-3 py-1 bg-white border border-stone-200 rounded-full shadow-sm hover:bg-stone-50 transition-colors text-[10px] font-medium text-stone-500"
+                className="flex items-center h-6 px-3 bg-white border border-stone-200 rounded-full shadow-sm hover:bg-stone-50 transition-colors text-[10px] font-medium text-stone-500"
               >
                 Sort: {sortBy === 'time' ? 'By Time' : 'By Priority'}
               </button>
@@ -1465,7 +1465,7 @@ User said: "${transcript}"`
         </Modal>
 
         {/* PDF EXPORT CONTENT - HIDDEN FROM SCREEN */}
-        <div className="absolute top-0 left-0 w-[800px] min-h-[1122px] bg-white text-black p-12 font-sans hidden z-[-50]" id="pdf-export-content">
+        <div className="absolute top-0 left-0 w-[800px] bg-white text-black p-12 font-sans hidden z-[-50]" id="pdf-export-content">
           {/* Header */}
           <div className="mb-8 flex flex-col items-center border-b border-gray-200 pb-8">
             <h1 className="text-4xl font-semibold tracking-wide text-gray-900 mb-2">KM Shaji</h1>
