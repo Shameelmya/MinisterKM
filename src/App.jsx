@@ -839,19 +839,7 @@ const ProgramCard = ({ program }) => {
           </div>
         )}
 
-        {/* Mobile action menu alternative */}
-        <div className="sm:hidden flex flex-col gap-1">
-          {permissions.canEdit && (
-            <button onClick={() => setEditProgram(program)} className="p-2 text-stone-400 hover:text-amber-700 hover:bg-amber-50 rounded-full transition-colors">
-              <IconEdit2 size={18} />
-            </button>
-          )}
-          {permissions.canDelete && (
-             <button onClick={handleDeleteClick} className="p-2 rounded-full text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors">
-              <IconTrash2 size={18} />
-            </button>
-          )}
-        </div>
+
       </div>
     </div>
   );
