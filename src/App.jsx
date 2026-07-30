@@ -1173,7 +1173,7 @@ const MainApp = () => {
           <div className="flex justify-around items-center h-16">
             <button onClick={() => { window.scrollTo(0, 0); setViewMode('schedule'); }} className={`flex flex-col items-center justify-center w-full h-full ${viewMode === 'schedule' ? 'text-[#4a3b32]' : 'text-[#8a7f78] hover:text-[#3a2e26]'}`}>
               <IconBookOpen size={20} className="mb-1" />
-              <span className="text-[10px] font-semibold">Diary</span>
+              <span className="text-[10px] font-semibold">Schedule</span>
             </button>
             <button onClick={() => { window.scrollTo(0, 0); setViewMode('todo'); }} className={`flex flex-col items-center justify-center w-full h-full ${viewMode === 'todo' ? 'text-[#4a3b32]' : 'text-[#8a7f78] hover:text-[#3a2e26]'}`}>
               <IconCheckCircle size={20} className="mb-1" />
