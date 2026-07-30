@@ -1098,7 +1098,7 @@ const MainApp = () => {
           margin:       10,
           filename:     `KM_Shaji_${config.viewMode === 'todo' ? 'ToDo' : 'Schedule'}_${dateStr}.pdf`,
           image:        { type: 'jpeg', quality: 1 },
-          html2canvas:  { scale: 2, useCORS: true, logging: false },
+          html2canvas:  { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
           jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         
@@ -1317,9 +1317,8 @@ User said: "${transcript}"`
             {permissions.canViewPriority && displayPrograms.length > 0 && viewMode === 'schedule' && (
               <button
                 onClick={() => setSortBy(prev => prev === 'time' ? 'priority' : 'time')}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-stone-200 rounded-full shadow-sm hover:bg-stone-50 transition-colors text-xs font-medium text-stone-600"
+                className="flex items-center px-3 py-1 bg-white border border-stone-200 rounded-full shadow-sm hover:bg-stone-50 transition-colors text-[10px] font-medium text-stone-500"
               >
-                <IconSort size={14} className="text-stone-400" />
                 Sort: {sortBy === 'time' ? 'By Time' : 'By Priority'}
               </button>
             )}
@@ -1466,19 +1465,20 @@ User said: "${transcript}"`
         </Modal>
 
         {/* PDF EXPORT CONTENT - HIDDEN FROM SCREEN */}
-        <div className="absolute top-0 left-0 w-[800px] bg-white text-black p-8 font-sans hidden z-[-50]" id="pdf-export-content">
-          <div className="mb-8 text-center pb-6 border-b border-gray-300 flex flex-col items-center">
-            <h1 className="text-3xl font-extrabold uppercase tracking-widest text-[#2d241f] mb-1">Hon. KM Shaji</h1>
-            <h2 className="text-lg font-medium text-stone-600 mb-5 tracking-wider">LSGD Minister, Keralam</h2>
+        <div className="absolute top-0 left-0 w-[800px] min-h-[1122px] bg-white text-black p-12 font-sans hidden z-[-50]" id="pdf-export-content">
+          {/* Header */}
+          <div className="mb-8 flex flex-col items-center border-b border-gray-200 pb-8">
+            <h1 className="text-4xl font-semibold tracking-wide text-gray-900 mb-2">KM Shaji</h1>
+            <h2 className="text-base font-medium text-gray-500 uppercase tracking-[0.2em] mb-5">LSGD Minister, Keralam</h2>
             
-            <div className="bg-[#faf9f8] border border-stone-200 rounded-full px-8 py-2.5 inline-block shadow-sm">
-              <h3 className="text-xl font-bold text-[#4a3b32]">
-                {printConfig.viewMode === 'todo' ? 'To-Do List' : 'Programme Schedule'} – {formatDate(currentDate)}
+            <div className="px-6 py-2 bg-gray-50 rounded-lg border border-gray-200">
+              <h3 className="text-lg font-medium text-gray-800">
+                {printConfig.viewMode === 'todo' ? 'To-Do List' : 'Programme Schedule'} • {formatDate(currentDate)}
               </h3>
             </div>
             
             {(printConfig.timeFilter !== 'all' || printConfig.priorityFilter !== 'all') && (
-              <p className="text-sm text-stone-500 mt-4 font-medium italic">
+              <p className="text-xs text-gray-400 mt-4 font-medium uppercase tracking-wider">
                 Filtered: 
                 {printConfig.timeFilter !== 'all' && printConfig.viewMode === 'schedule' && ` ${printConfig.timeFilter === 'am' ? 'Morning Only' : 'Afternoon Only'}`}
                 {printConfig.timeFilter !== 'all' && printConfig.priorityFilter !== 'all' && printConfig.viewMode === 'schedule' && ' | '}
@@ -1487,25 +1487,26 @@ User said: "${transcript}"`
             )}
           </div>
 
-          <div className="rounded-2xl border border-stone-300 overflow-hidden shadow-sm mx-2">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-stone-100 border-b-2 border-stone-300">
+          {/* Table Container */}
+          <div className="rounded-xl border border-gray-300 overflow-hidden mb-8">
+            <table className="w-full text-left border-collapse bg-white">
+              <thead className="bg-gray-50 border-b border-gray-300">
                 <tr>
                   {printConfig.viewMode === 'schedule' && (
-                    <th className="py-4 px-6 font-bold text-sm uppercase tracking-wider text-[#4a3b32] w-32">Time</th>
+                    <th className="py-4 px-6 font-semibold text-xs uppercase tracking-wider text-gray-600 border-r border-gray-200 w-32">Time</th>
                   )}
-                  <th className="py-4 px-6 font-bold text-sm uppercase tracking-wider text-[#4a3b32]">
+                  <th className="py-4 px-6 font-semibold text-xs uppercase tracking-wider text-gray-600 border-r border-gray-200">
                     {printConfig.viewMode === 'schedule' ? 'Programme' : 'Description'}
                   </th>
-                  <th className="py-4 px-6 font-bold text-sm uppercase tracking-wider text-[#4a3b32] w-56">
+                  <th className="py-4 px-6 font-semibold text-xs uppercase tracking-wider text-gray-600 w-56">
                     {printConfig.viewMode === 'schedule' ? 'Contact' : 'Details'}
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-200 bg-white">
+              <tbody className="divide-y divide-gray-200">
                 {printPrograms.length === 0 ? (
                   <tr>
-                    <td colSpan={printConfig.viewMode === 'schedule' ? "3" : "2"} className="py-10 text-center italic text-stone-500">
+                    <td colSpan={printConfig.viewMode === 'schedule' ? "3" : "2"} className="py-12 text-center text-gray-400 font-medium">
                       No entries scheduled for this day.
                     </td>
                   </tr>
@@ -1521,21 +1522,22 @@ User said: "${transcript}"`
                     }
 
                     return (
-                      <tr key={p.id} className="page-break-inside-avoid hover:bg-stone-50 transition-colors">
+                      <tr key={p.id} className="page-break-inside-avoid">
                         {printConfig.viewMode === 'schedule' && (
-                          <td className="py-4 px-6 font-semibold text-sm align-top whitespace-nowrap text-[#2d241f]">{displayTime}</td>
+                          <td className="py-5 px-6 font-medium text-sm text-gray-800 border-r border-gray-200 align-top whitespace-nowrap">{displayTime}</td>
                         )}
-                        <td className="py-4 px-6 align-top whitespace-pre-wrap text-stone-900 leading-relaxed">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            {p.completed && <span className="text-[10px] bg-green-100 text-green-800 px-2 py-0.5 rounded-full uppercase font-bold tracking-wider">Done</span>}
-                            {p.priority && <span className={`text-[10px] font-bold border px-2 py-0.5 rounded-full uppercase tracking-wide ${p.priority === 'high' ? 'border-red-200 text-red-600 bg-red-50' : p.priority === 'medium' ? 'border-amber-200 text-amber-600 bg-amber-50' : 'border-stone-200 text-stone-600 bg-stone-50'}`}>{p.priority}</span>}
-                          </div>
-                          <span className={p.completed ? "line-through text-stone-400" : "font-medium"}>{p.eventName}</span>
+                        <td className="py-5 px-6 align-top text-sm border-r border-gray-200">
+                          {p.completed && (
+                            <div className="mb-1.5">
+                              <span className="text-[9px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Completed</span>
+                            </div>
+                          )}
+                          <span className={p.completed ? "line-through text-gray-400" : "font-medium text-gray-900 leading-relaxed"}>{p.eventName}</span>
                         </td>
-                        <td className="py-4 px-6 align-top text-sm font-medium text-stone-700">
-                          {p.contactNumber && <div className="flex items-center gap-2"><span>Ph:</span> <span>{p.contactNumber}</span></div>}
-                          {p.type === 'todo' && p.link && <div className="text-blue-600 font-normal break-all mt-1">{p.link}</div>}
-                          {!p.contactNumber && (!p.link || p.type !== 'todo') && <span className="text-stone-300">—</span>}
+                        <td className="py-5 px-6 align-top text-sm font-medium text-gray-600">
+                          {p.contactNumber && <div className="flex items-center gap-1.5"><span className="text-gray-400">Ph:</span> <span className="text-gray-800">{p.contactNumber}</span></div>}
+                          {p.type === 'todo' && p.link && <div className="text-gray-500 font-normal break-all mt-1">{p.link}</div>}
+                          {!p.contactNumber && (!p.link || p.type !== 'todo') && <span className="text-gray-300">—</span>}
                         </td>
                       </tr>
                     );
@@ -1545,8 +1547,10 @@ User said: "${transcript}"`
             </table>
           </div>
           
-          <div className="mt-8 text-right text-xs text-stone-400 italic px-4">
-            Generated on {new Date().toLocaleString('en-IN')}
+          {/* Footer */}
+          <div className="pt-4 border-t border-gray-200 flex justify-between items-center text-[10px] text-gray-400 uppercase tracking-widest">
+            <span>Official Schedule Document</span>
+            <span>Generated on {new Date().toLocaleString('en-IN')}</span>
           </div>
         </div>
 
