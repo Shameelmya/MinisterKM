@@ -128,21 +128,20 @@ const LoginCover = () => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-6 print:hidden">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border border-stone-200">
-        <div className="bg-[#4a3b32] pt-16 pb-12 px-8 text-center text-stone-50 relative overflow-hidden">
+    <div className="fixed inset-0 bg-stone-50 flex flex-col items-center justify-center p-4 sm:p-6 print:hidden">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border border-stone-200 flex flex-col max-h-full">
+        <div className="bg-[#4a3b32] pt-12 pb-8 px-6 text-center text-stone-50 relative overflow-hidden flex-shrink-0">
           <div className="absolute inset-0 bg-black/10"></div>
           <div className="relative z-10">
-            <div className="w-44 h-44 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden border-[8px] border-white/10">
+            <div className="w-40 h-40 rounded-full mx-auto mb-3 overflow-hidden bg-transparent">
               <img src="/minister.png" alt="Minister" className="w-full h-full object-cover" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-white uppercase drop-shadow-md">Minister's Day</h1>
-            <p className="text-amber-100/90 mt-2 text-sm font-semibold tracking-wide">KM Shaji</p>
-            <p className="text-amber-200/70 text-xs mt-1">Hon. LSGD Minister, Keralam</p>
+            <h1 className="text-2xl font-bold tracking-tight text-white drop-shadow-md">Minister's Diary</h1>
+            <p className="text-amber-100/90 mt-1 text-[13px] font-medium tracking-wide">KM Shaji - Hon. LSGD Minister, Keralam</p>
           </div>
         </div>
         
-        <div className="p-8 pb-10">
+        <div className="p-6 sm:pb-8 flex-shrink-0 overflow-y-auto">
           {!selectedRole ? (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-6 text-center">Select Role</h2>
