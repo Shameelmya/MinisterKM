@@ -1094,7 +1094,7 @@ const MainApp = () => {
         const html2pdf = (await import('html2pdf.js')).default;
         
         const opt = {
-          margin:       10,
+          margin:       20,
           filename:     `KM_Shaji_${config.viewMode === 'todo' ? 'ToDo' : 'Schedule'}_${dateStr}.pdf`,
           image:        { type: 'jpeg', quality: 1 },
           html2canvas:  { scale: 2, useCORS: true, logging: false },
@@ -1484,17 +1484,17 @@ User said: "${transcript}"`
             </div>
 
             {/* Table Container */}
-            <div className="rounded-xl border border-stone-200 overflow-hidden mb-8">
-              <table className="w-full text-left border-collapse bg-white">
-                <thead className="bg-stone-50">
+            <div className="mb-8">
+              <table className="w-full text-center border-collapse bg-white">
+                <thead className="bg-[#4a3b32] text-white border-black">
                   <tr>
                     {printConfig.viewMode === 'schedule' && (
-                      <th className="py-3 px-5 font-semibold text-[11px] uppercase tracking-wider text-stone-500 border border-stone-200 w-32">Time</th>
+                      <th className="py-2.5 px-4 font-bold text-[11px] uppercase tracking-widest border border-black w-24">Time</th>
                     )}
-                    <th className="py-3 px-5 font-semibold text-[11px] uppercase tracking-wider text-stone-500 border border-stone-200">
+                    <th className="py-2.5 px-4 font-bold text-[11px] uppercase tracking-widest border border-black">
                       {printConfig.viewMode === 'schedule' ? 'Programme' : 'Description'}
                     </th>
-                    <th className="py-3 px-5 font-semibold text-[11px] uppercase tracking-wider text-stone-500 border border-stone-200 w-56">
+                    <th className="py-2.5 px-4 font-bold text-[11px] uppercase tracking-widest border border-black w-48">
                       {printConfig.viewMode === 'schedule' ? 'Contact' : 'Details'}
                     </th>
                   </tr>
@@ -1502,7 +1502,7 @@ User said: "${transcript}"`
                 <tbody className="bg-white">
                   {printPrograms.length === 0 ? (
                     <tr>
-                      <td colSpan={printConfig.viewMode === 'schedule' ? "3" : "2"} className="py-10 text-center text-stone-400 font-medium border border-stone-200">
+                      <td colSpan={printConfig.viewMode === 'schedule' ? "3" : "2"} className="py-8 text-center text-black font-medium border border-black">
                         No entries scheduled for this day.
                       </td>
                     </tr>
@@ -1520,20 +1520,20 @@ User said: "${transcript}"`
                       return (
                         <tr key={p.id} className="page-break-inside-avoid">
                           {printConfig.viewMode === 'schedule' && (
-                            <td className="py-4 px-5 font-medium text-sm text-stone-800 border border-stone-200 align-top whitespace-nowrap">{displayTime}</td>
+                            <td className="py-2.5 px-4 font-bold text-sm text-black border border-black align-middle whitespace-nowrap">{displayTime}</td>
                           )}
-                          <td className="py-4 px-5 align-top text-sm border border-stone-200">
+                          <td className="py-2.5 px-4 align-middle text-sm border border-black text-black">
                             {p.completed && (
                               <div className="mb-1">
                                 <span className="text-[9px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Completed</span>
                               </div>
                             )}
-                            <span className={p.completed ? "line-through text-stone-400" : "font-medium text-stone-900 leading-relaxed"}>{p.eventName}</span>
+                            <span className={p.completed ? "line-through text-stone-400" : "font-semibold leading-relaxed"}>{p.eventName}</span>
                           </td>
-                          <td className="py-4 px-5 align-top text-sm font-medium text-stone-600 border border-stone-200">
-                            {p.contactNumber && <div className="flex items-center gap-1.5"><span className="text-stone-400">Ph:</span> <span className="text-stone-800">{p.contactNumber}</span></div>}
-                            {p.type === 'todo' && p.link && <div className="text-stone-500 font-normal break-all mt-1">{p.link}</div>}
-                            {!p.contactNumber && (!p.link || p.type !== 'todo') && <span className="text-stone-300">—</span>}
+                          <td className="py-2.5 px-4 align-middle text-sm font-medium text-black border border-black">
+                            {p.contactNumber && <div className="flex items-center justify-center gap-1.5"><span className="text-black font-bold">Ph:</span> <span>{p.contactNumber}</span></div>}
+                            {p.type === 'todo' && p.link && <div className="font-normal break-all mt-1">{p.link}</div>}
+                            {!p.contactNumber && (!p.link || p.type !== 'todo') && <span>—</span>}
                           </td>
                         </tr>
                       );
