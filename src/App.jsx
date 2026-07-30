@@ -849,6 +849,10 @@ const MainApp = () => {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   
+  const [isListening, setIsListening] = useState(false);
+  const [isProcessingVoice, setIsProcessingVoice] = useState(false);
+  const [voicePrefill, setVoicePrefill] = useState(null);
+  
   const [printConfig, setPrintConfig] = useState({ timeFilter: 'all', priorityFilter: 'all', viewMode: 'schedule' });
 
   const permissions = useMemo(() => getPermissions(user.role), [user.role]);
@@ -1059,6 +1063,83 @@ const MainApp = () => {
     }, 100);
   };
 
+  const handleVoiceInput = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Your browser does not support voice input. Please use Google Chrome or Safari.");
+      return;
+    }
+    
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ml-IN'; 
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    
+    recognition.onstart = () => setIsListening(true);
+    
+    recognition.onresult = (event) => {
+      setIsListening(false);
+      const transcript = event.results[0][0].transcript;
+      processVoiceWithGemini(transcript);
+    };
+    
+    recognition.onerror = (event) => {
+      setIsListening(false);
+      console.error("Speech recognition error:", event.error);
+      if (event.error !== 'no-speech') {
+        alert("Voice recognition error: " + event.error);
+      }
+    };
+    
+    recognition.start();
+  };
+
+  const processVoiceWithGemini = async (transcript) => {
+    setIsProcessingVoice(true);
+    try {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        alert("Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your environment variables.");
+        return;
+      }
+      
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `You are an AI assistant parsing voice commands into JSON for a schedule app.
+Return RAW JSON ONLY, no markdown formatting (\`\`\`json) or comments.
+Fields to output:
+- type: 'schedule' or 'todo'. If user says 'starting to do' or 'todo' or it sounds like a task, set 'todo'. Otherwise 'schedule'.
+- eventName: The name of the program, place, or person (e.g. "കല്യാണം- അഹമ്മദ്ക്ക, കോഴിക്കോട്").
+- contactNumber: The phone number if mentioned, else "".
+- time: The time in 24-hour format "HH:MM" if mentioned (e.g., 11:00 AM -> 11:00, 2:00 PM -> 14:00), else "".
+
+User said: "${transcript}"`
+            }]
+          }]
+        })
+      });
+      
+      if (!response.ok) throw new Error("API request failed");
+      
+      const data = await response.json();
+      let jsonStr = data.candidates[0].content.parts[0].text;
+      jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
+      
+      const parsedData = JSON.parse(jsonStr);
+      setVoicePrefill(parsedData);
+      openModal('#add', setIsAddOpen);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to process voice input. Please try typing instead.");
+    } finally {
+      setIsProcessingVoice(false);
+    }
+  };
+
   const contextValue = {
     programs, permissions, deleteProgram, toggleCompletion, setEditProgram
   };
@@ -1195,11 +1276,23 @@ const MainApp = () => {
           </div>
         </main>
 
-        {/* Floating Action Button */}
+        {/* Floating Action Buttons */}
         {permissions.canAdd && (
-          <div className="fixed bottom-20 sm:bottom-8 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 z-40 print:hidden">
+          <div className="fixed bottom-20 sm:bottom-8 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 z-40 print:hidden flex flex-col sm:flex-row gap-3">
             <button 
-              onClick={() => openModal('#add', setIsAddOpen)}
+              onClick={handleVoiceInput}
+              disabled={isListening || isProcessingVoice}
+              className={`flex items-center justify-center gap-2 text-white shadow-lg shadow-amber-600/30 hover:shadow-xl hover:-translate-y-1 transition-all w-14 h-14 sm:w-auto sm:h-12 sm:px-6 rounded-full ${isListening ? 'bg-red-500 animate-pulse' : isProcessingVoice ? 'bg-amber-400' : 'bg-amber-500 hover:bg-amber-600'}`}
+            >
+              {isProcessingVoice ? (
+                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <IconMic size={24} className="sm:w-5 sm:h-5" />
+              )}
+              <span className="hidden sm:inline font-medium">{isListening ? 'Listening...' : isProcessingVoice ? 'Thinking...' : 'Voice Entry'}</span>
+            </button>
+            <button 
+              onClick={() => { setVoicePrefill(null); openModal('#add', setIsAddOpen); }}
               className="flex items-center justify-center gap-2 bg-[#4a3b32] text-white shadow-lg shadow-[#4a3b32]/30 hover:shadow-xl hover:-translate-y-1 hover:bg-[#3a2e26] transition-all w-14 h-14 sm:w-auto sm:h-12 sm:px-6 rounded-full"
             >
               <IconPlus size={24} className="sm:w-5 sm:h-5" />
@@ -1232,7 +1325,7 @@ const MainApp = () => {
 
         {/* Modals */}
         <Modal isOpen={isAddOpen} onClose={() => closeModal('#add', setIsAddOpen)} title="New Entry">
-          <ProgramForm onSubmit={handleAdd} onCancel={() => closeModal('#add', setIsAddOpen)} isSaving={isSaving} />
+          <ProgramForm onSubmit={handleAdd} onCancel={() => closeModal('#add', setIsAddOpen)} isSaving={isSaving} initialData={voicePrefill} />
         </Modal>
 
         <Modal isOpen={!!editProgram} onClose={() => closeModal('#edit', setEditProgram)} title="Edit Entry">
