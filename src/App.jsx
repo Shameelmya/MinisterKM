@@ -1469,7 +1469,7 @@ User said: "${transcript}"`
               <h1 className="text-3xl font-bold tracking-tight text-stone-900 mb-1.5">KM Shaji</h1>
               <h2 className="text-sm font-bold text-stone-600 uppercase tracking-widest mb-4">Hon LSG Department Minister</h2>
               
-              <h3 className="text-lg font-bold text-stone-900 bg-stone-100 px-5 py-2.5 rounded-lg border border-stone-200">
+              <h3 className="text-lg font-bold text-stone-900">
                 {printConfig.viewMode === 'todo' ? 'To-Do List' : 'Programme Schedule'} • {formatDate(currentDate)}
               </h3>
               
@@ -1525,7 +1525,7 @@ User said: "${transcript}"`
                                 <span className="text-[9px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Completed</span>
                               </div>
                             )}
-                            <div className={p.completed ? "line-through text-stone-400" : "font-bold leading-relaxed"}>
+                            <div className={p.completed ? "line-through text-stone-400" : "font-medium leading-relaxed"}>
                               {p.eventName}
                               {p.contactNumber && ` - Mob: ${p.contactNumber}`}
                             </div>
