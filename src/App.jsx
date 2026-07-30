@@ -1,713 +1,1314 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Building2, Map, MapPin, Tent, Trees, Home, 
-  X, Plus, ChevronDown, Image as ImageIcon, 
-  Send, Calendar, Clock, CheckCircle2, FileText, Loader2, AlertTriangle, HelpCircle
-} from 'lucide-react';
+import React, { useState, useEffect, createContext, useContext, useMemo } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, initializeFirestore, persistentLocalCache, collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore';
 
-// --- FIREBASE IMPORTS ---
-import { initializeApp } from "firebase/app";
-import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "firebase/auth";
-import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
+const IconCalendar = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+);
+const IconChevronLeft = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="15 18 9 12 15 6"></polyline></svg>
+);
+const IconChevronRight = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"></polyline></svg>
+);
+const IconPlus = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+);
+const IconCheckCircle = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+);
+const IconCircle = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle></svg>
+);
+const IconEdit2 = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+);
+const IconTrash2 = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+);
+const IconPrinter = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+);
+const IconLogOut = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+);
+const IconPhone = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+);
+const IconX = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+);
+const IconBookOpen = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+);
+const IconUser = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+);
+const IconSort = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="14" y2="15"></line><line x1="10" y1="3" x2="10" y2="21"></line><polyline points="7 6 10 3 13 6"></polyline><polyline points="7 18 10 21 13 18"></polyline></svg>
+);
+const IconRefresh = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 21v-5h5"></path></svg>
+);
+const IconLink = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+);
 
-// --- FIREBASE CONFIGURATION ---
 const firebaseConfig = {
-  apiKey: "AIzaSyAxL8ejtFBr7m7OJ8gYgd1NpyluwGpiZgA",
-  authDomain: "tanur-project-tracker.firebaseapp.com",
-  projectId: "tanur-project-tracker",
-  storageBucket: "tanur-project-tracker.firebasestorage.app",
-  messagingSenderId: "1033537596014",
-  appId: "1:1033537596014:web:88d2ea52b4ff5f08a9947f"
+  apiKey: "AIzaSyB-944yLcCXCT_ZPuvsSTRroNV-Gxdiw3c",
+  authDomain: "km-shaji-diary.firebaseapp.com",
+  projectId: "km-shaji-diary",
+  storageBucket: "km-shaji-diary.firebasestorage.app",
+  messagingSenderId: "205371244740",
+  appId: "1:205371244740:web:9e86b088a0ad93f83cc991"
 };
 
-// Initialize Firebase App safely
-let app, auth, db;
+const firebaseApp = initializeApp(firebaseConfig);
+let db;
 try {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-} catch (e) {
-  console.error("Firebase init failed:", e);
-}
-
-// Derive a safe App ID for Canvas environments
-const CANVAS_APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'tanur-tracker-default';
-
-// --- CONSTANTS ---
-const INITIAL_LOCAL_BODIES = [
-  { id: 'tanur', name: 'Tanur Municipality', color: 'from-indigo-500 to-purple-600', theme: 'indigo', icon: Building2 },
-  { id: 'ozhur', name: 'Ozhur', color: 'from-emerald-400 to-green-600', theme: 'emerald', icon: Trees },
-  { id: 'cheriyamundam', name: 'Cheriyamundam', color: 'from-blue-400 to-cyan-600', theme: 'blue', icon: Map },
-  { id: 'ponmundam', name: 'Ponmundam', color: 'from-amber-400 to-orange-500', theme: 'amber', icon: Tent },
-  { id: 'tanalur', name: 'Tanalur', color: 'from-rose-400 to-pink-600', theme: 'rose', icon: Home },
-  { id: 'niramaruthur', name: 'Niramaruthur', color: 'from-teal-400 to-emerald-500', theme: 'teal', icon: MapPin },
-];
-
-const THEME_MAP = {
-  indigo: { light: 'bg-indigo-50 border-indigo-100', dark: 'bg-indigo-100/60 border-indigo-200', text: 'text-indigo-800' },
-  emerald: { light: 'bg-emerald-50 border-emerald-100', dark: 'bg-emerald-100/60 border-emerald-200', text: 'text-emerald-800' },
-  blue: { light: 'bg-blue-50 border-blue-100', dark: 'bg-blue-100/60 border-blue-200', text: 'text-blue-800' },
-  amber: { light: 'bg-amber-50 border-amber-100', dark: 'bg-amber-100/60 border-amber-200', text: 'text-amber-800' },
-  rose: { light: 'bg-rose-50 border-rose-100', dark: 'bg-rose-100/60 border-rose-200', text: 'text-rose-800' },
-  teal: { light: 'bg-teal-50 border-teal-100', dark: 'bg-teal-100/60 border-teal-200', text: 'text-teal-800' },
-};
-
-// Image Compression Utility (Crucial for Firestore 1MB limits)
-const compressImage = (file) => {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        const MAX_HEIGHT = 800;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-        } else {
-          if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.6)); // Compress to 60% quality JPEG
-      };
-    };
+  db = initializeFirestore(firebaseApp, {
+    localCache: persistentLocalCache()
   });
-};
-
-export default function App() {
-  const [localBodies] = useState(INITIAL_LOCAL_BODIES);
-  const [activeBody, setActiveBody] = useState(null);
-  
-  // Firebase & State Handlers
-  const [user, setUser] = useState(null);
-  const [authError, setAuthError] = useState(null);
-  const [showSetupGuide, setShowSetupGuide] = useState(false);
-
-  // Fallback Local Memory State (so the app works immediately if auth fails!)
-  const [allProjects, setAllProjects] = useState([]); 
-  const [localUpdates, setLocalUpdates] = useState({}); // For offline preview fallback
-
-  // --- FIREBASE: Auth & Initial Data Load ---
-  useEffect(() => {
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Noto+Serif+Malayalam:wght@400;600;700&family=Sora:wght@300;400;600;700&display=swap';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
-
-    if (!auth) {
-      setAuthError("Firebase not initialized correctly.");
-      return;
-    }
-
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-        setAuthError(null);
-      } catch (error) {
-        console.error("Auth Error:", error);
-        // Set the error state so we can display helpful setup guidelines
-        setAuthError(error.code || error.message);
-      }
-    };
-    initAuth();
-
-    const unsubscribeAuth = onAuthStateChanged(auth, (usr) => {
-      if (usr) {
-        setUser(usr);
-      } else {
-        setUser(null);
-      }
-    });
-    return () => unsubscribeAuth();
-  }, []);
-
-  // 2. Fetch lightweight project summaries (Real-time Firebase mode)
-  useEffect(() => {
-    if (!user || authError) return;
-
-    const projectsRef = collection(db, 'artifacts', CANVAS_APP_ID, 'public', 'data', 'projects');
-    
-    const unsubscribeProjects = onSnapshot(projectsRef, (snapshot) => {
-      const projectsData = [];
-      snapshot.forEach(doc => {
-        projectsData.push({ id: doc.id, ...doc.data() });
-      });
-      projectsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setAllProjects(projectsData);
-    }, (error) => {
-      console.error("Error fetching projects:", error);
-    });
-
-    return () => unsubscribeProjects();
-  }, [user, authError]);
-
-  // --- Handlers ---
-  const handleOpenBody = (body) => setActiveBody(body);
-  const handleCloseBody = () => setActiveBody(null);
-
-  const handleAddProject = async (bodyId, projectName) => {
-    const projectId = `proj_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const projectData = {
-      id: projectId,
-      localBodyId: bodyId,
-      name: projectName,
-      createdAt: new Date().toISOString(),
-      updateCount: 0
-    };
-
-    // If Auth Failed, Fallback gracefully to offline state
-    if (!user || authError) {
-      setAllProjects(prev => [projectData, ...prev]);
-      setLocalUpdates(prev => ({ ...prev, [projectId]: [] }));
-      return;
-    }
-
-    try {
-      await setDoc(doc(db, 'artifacts', CANVAS_APP_ID, 'public', 'data', 'projects', projectId), projectData);
-      await setDoc(doc(db, 'artifacts', CANVAS_APP_ID, 'public', 'data', 'project_updates', projectId), { updates: [] });
-    } catch (err) {
-      console.error("Error adding project:", err);
-    }
-  };
-
-  const getProjectCount = (bodyId) => allProjects.filter(p => p.localBodyId === bodyId).length;
-
-  return (
-    <div className="h-screen bg-slate-50 text-slate-800 flex flex-col overflow-hidden" style={{ fontFamily: "'Sora', 'Noto Serif Malayalam', sans-serif" }}>
-      {/* Header */}
-      <header className="bg-white shadow-sm shrink-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-          <h1 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2 sm:gap-3">
-            <Map className="w-5 h-5 sm:w-7 sm:h-7 text-indigo-600" />
-            Tanur Projects Tracker
-          </h1>
-          
-          {authError ? (
-            <button 
-              onClick={() => setShowSetupGuide(true)}
-              className="flex items-center gap-1 bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-1.5 rounded-full shadow-sm animate-pulse"
-            >
-              <AlertTriangle className="w-3.5 h-3.5" /> Setup Needed
-            </button>
-          ) : (
-            <span className="text-[10px] sm:text-xs font-semibold bg-emerald-50 border border-emerald-100 text-emerald-800 px-2.5 py-1.5 rounded-full">
-              Connected to Cloud DB
-            </span>
-          )}
-        </div>
-      </header>
-
-      {/* Auth Setup Guide Dialog Overlay */}
-      {showSetupGuide && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-in zoom-in-95">
-            <button 
-              onClick={() => setShowSetupGuide(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            
-            <div className="text-amber-500 mb-4">
-              <AlertTriangle className="w-12 h-12" />
-            </div>
-            
-            <h3 className="text-lg font-bold text-slate-900">Enable Anonymous Sign-In</h3>
-            <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-              Your Firebase Auth settings are blocking guest logins. Please follow these simple steps to fix this:
-            </p>
-            
-            <ol className="mt-4 space-y-3 text-xs text-slate-700 list-decimal pl-5 font-medium">
-              <li>Open your <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline font-bold">Firebase Console</a>.</li>
-              <li>Go to your project <strong>tanur-project-tracker</strong>.</li>
-              <li>Under the left menu, select <strong>Build</strong> &gt; <strong>Authentication</strong>.</li>
-              <li>Click the <strong>Sign-in method</strong> tab.</li>
-              <li>Click <strong>Add new provider</strong> and choose <strong>Anonymous</strong>.</li>
-              <li>Toggle it to <strong>Enabled</strong> and click <strong>Save</strong>.</li>
-            </ol>
-
-            <button 
-              onClick={() => setShowSetupGuide(false)}
-              className="mt-6 w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors text-sm"
-            >
-              Got it!
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Main Grid */}
-      <main className="flex-1 overflow-hidden px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col justify-center items-center">
-        {authError && (
-          <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs px-4 py-2.5 rounded-xl max-w-7xl w-full flex justify-between items-center">
-            <span className="flex items-center gap-2">
-              <HelpCircle className="w-4 h-4 flex-shrink-0" />
-              <span><strong>Previewing Locally:</strong> Firebase needs Anonymous Auth configured. The application is completely interactive in offline preview mode!</span>
-            </span>
-            <button onClick={() => setShowSetupGuide(true)} className="underline font-bold hover:text-amber-950 ml-2">Show Instructions</button>
-          </div>
-        )}
-
-        <div className="max-w-7xl w-full grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5">
-          {localBodies.map((body) => (
-            <div 
-              key={body.id}
-              onClick={() => handleOpenBody(body)}
-              className={`relative overflow-hidden rounded-xl cursor-pointer group bg-gradient-to-br ${body.color} p-3 sm:p-5 text-white shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between min-h-[110px] sm:min-h-[140px]`}
-            >
-              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 sm:w-32 sm:h-32 bg-white opacity-10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-              
-              <div className="relative z-10 flex flex-col h-full justify-between">
-                <div className="flex justify-between items-start">
-                  <div className="p-2 sm:p-3 bg-white/20 rounded-lg sm:rounded-xl backdrop-blur-sm">
-                    <body.icon className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
-                  </div>
-                  <div className="text-right">
-                    <span className="inline-flex items-center justify-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full bg-white/20 backdrop-blur-sm text-[10px] sm:text-xs font-semibold">
-                      {getProjectCount(body.id)} Projects
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="mt-3 sm:mt-5">
-                  <h2 className="text-sm sm:text-lg lg:text-xl font-bold leading-tight line-clamp-2">{body.name}</h2>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </main>
-
-      {/* Modal / Detail Window */}
-      {activeBody && (
-        <ProjectModal 
-          body={activeBody} 
-          onClose={handleCloseBody}
-          projects={allProjects.filter(p => p.localBodyId === activeBody.id)}
-          onAddProject={(name) => handleAddProject(activeBody.id, name)}
-          user={user}
-          authError={authError}
-          localUpdates={localUpdates}
-          setLocalUpdates={setLocalUpdates}
-          setAllProjects={setAllProjects}
-        />
-      )}
-    </div>
-  );
+} catch (error) {
+  db = getFirestore(firebaseApp);
 }
 
-// --- Subcomponents ---
+const AuthContext = createContext(null);
+const AppContext = createContext(null);
 
-function ProjectModal({ body, onClose, projects, onAddProject, user, authError, localUpdates, setLocalUpdates, setAllProjects }) {
-  const [isAddingProject, setIsAddingProject] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
+const ROLES = {
+  PS_EDIT: 'ps_edit',
+  PS_VIEW: 'ps_view'
+};
 
-  useEffect(() => {
-    const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [onClose]);
+const getPermissions = (role) => ({
+  canAdd: role === ROLES.PS_EDIT,
+  canEdit: role === ROLES.PS_EDIT,
+  canDelete: role === ROLES.PS_EDIT,
+  canComplete: role === ROLES.PS_EDIT,
+  canViewPriority: role === ROLES.PS_EDIT,
+});
 
-  const handleCreateProject = (e) => {
+const formatDate = (date) => {
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  return date.toLocaleDateString('en-US', options);
+};
+
+const LoginCover = () => {
+  const { login } = useContext(AuthContext);
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleLogin = (e) => {
     e.preventDefault();
-    if (!newProjectName.trim()) return;
-    onAddProject(newProjectName);
-    setNewProjectName('');
-    setIsAddingProject(false);
+    setError('');
+    
+    let isValid = false;
+    if (selectedRole === ROLES.PS_EDIT && password === 'hisham@edit') {
+      isValid = true;
+    } else if (selectedRole === ROLES.PS_VIEW && password === 'view@diary') {
+      isValid = true;
+    }
+
+    if (isValid) {
+      login(selectedRole);
+    } else {
+      setError('Incorrect password');
+    }
+  };
+
+  const roleLabels = {
+    [ROLES.PS_EDIT]: 'PS Edit Access',
+    [ROLES.PS_VIEW]: 'PS View Only'
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-        
-        {/* Modal Header */}
-        <div className={`p-4 sm:p-6 bg-gradient-to-r ${body.color} text-white flex justify-between items-center shrink-0`}>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2 sm:gap-3">
-              <body.icon className="w-6 h-6 sm:w-7 sm:h-7 opacity-80" />
-              {body.name}
-            </h2>
-            <p className="mt-1 text-white/80 font-medium text-xs sm:text-sm">Manage and track local development projects.</p>
+    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-6 print:hidden">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border border-stone-200">
+        <div className="bg-[#4a3b32] p-10 text-center text-stone-50">
+          <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm border border-white/20 shadow-inner">
+            <IconCalendar size={32} className="text-amber-100" />
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button 
-              onClick={() => setIsAddingProject(!isAddingProject)}
-              className="p-2 sm:p-2.5 bg-white text-slate-900 hover:bg-slate-100 rounded-full transition-transform hover:scale-105 shadow-md flex items-center justify-center"
-              title="Add New Project"
-            >
-              <Plus className={`w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 ${isAddingProject ? 'rotate-45' : ''}`} />
-            </button>
-            <button 
-              onClick={onClose}
-              className="p-2 sm:p-2.5 bg-black/20 hover:bg-black/30 text-white rounded-full transition-colors backdrop-blur-sm flex items-center justify-center"
-              title="Close"
-            >
-              <X className="w-5 h-5 sm:w-6 sm:h-6" />
-            </button>
-          </div>
+          <h1 className="text-2xl font-semibold tracking-tight text-white">Minister Schedule</h1>
+          <p className="text-amber-100 mt-2 text-sm font-medium">KM Shaji</p>
+          <p className="text-amber-200/70 text-xs mt-1">LSGD Minister, Kerala</p>
         </div>
-
-        {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50">
-          
-          {isAddingProject && (
-            <div className="mb-5 sm:mb-6 animate-in slide-in-from-top-2">
-              <form onSubmit={handleCreateProject} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3">
-                <input 
-                  type="text" 
-                  autoFocus
-                  placeholder="Enter project name..."
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
-                  className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-medium text-sm sm:text-base"
-                />
-                <button 
-                  type="submit"
-                  disabled={!newProjectName.trim()}
-                  className="flex-1 sm:flex-none px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors whitespace-nowrap text-sm sm:text-base"
+        
+        <div className="p-8">
+          {!selectedRole ? (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h2 className="text-sm font-semibold text-stone-500 uppercase tracking-wider mb-4 text-center">Select Role</h2>
+              {Object.entries(roleLabels).map(([role, label]) => (
+                <button
+                  key={role}
+                  onClick={() => setSelectedRole(role)}
+                  className="w-full py-4 px-6 text-left rounded-xl border border-stone-200 hover:border-amber-700 hover:bg-stone-50 transition-all font-medium text-stone-800 flex justify-between items-center group"
                 >
-                  Create
+                  {label}
+                  <IconChevronRight size={18} className="text-stone-400 group-hover:text-amber-800 transition-colors" />
                 </button>
-              </form>
+              ))}
             </div>
-          )}
-
-          {/* Projects List */}
-          <div className="space-y-4">
-            {projects.length === 0 ? (
-              <div className="text-center py-12 text-slate-400">
-                <FileText className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                <p className="text-base sm:text-lg">No projects added yet.</p>
-                <p className="text-xs sm:text-sm mt-1">Click the <Plus className="w-3 h-3 inline" /> button top right to get started.</p>
+          ) : (
+            <form onSubmit={handleLogin} className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="flex items-center text-sm font-medium text-stone-500 mb-2">
+                <button 
+                  type="button" 
+                  onClick={() => { setSelectedRole(null); setPassword(''); setError(''); }}
+                  className="flex items-center hover:text-stone-800 transition-colors"
+                >
+                  <IconChevronLeft size={16} className="mr-1" /> Back
+                </button>
+                <span className="mx-auto bg-stone-100 px-3 py-1 rounded-full text-stone-700 text-xs">
+                  {roleLabels[selectedRole]}
+                </span>
               </div>
-            ) : (
-              projects.map((project, index) => (
-                <ProjectAccordion 
-                  key={project.id} 
-                  project={project} 
-                  theme={body.theme}
-                  index={index}
-                  user={user}
-                  authError={authError}
-                  localUpdates={localUpdates}
-                  setLocalUpdates={setLocalUpdates}
-                  setAllProjects={setAllProjects}
+              
+              <div>
+                <label className="block text-sm font-medium text-stone-700 mb-2">Secure Password</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-[#4a3b32] focus:ring-1 focus:ring-[#4a3b32] outline-none transition-all"
+                  placeholder="Enter password"
+                  autoFocus
                 />
-              ))
-            )}
-          </div>
+                {error && <p className="text-red-600 text-xs mt-2 font-medium">{error}</p>}
+              </div>
+              
+              <button
+                type="submit"
+                disabled={!password}
+                className="w-full py-3.5 bg-[#4a3b32] text-white rounded-xl font-medium hover:bg-[#3a2e26] transition-colors flex justify-center items-center"
+              >
+                Sign In
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
   );
-}
+};
 
-function ProjectAccordion({ project, theme, index, user, authError, localUpdates, setLocalUpdates, setAllProjects }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [updateText, setUpdateText] = useState('');
-  const [imagePreviews, setImagePreviews] = useState([]);
-  const [expandedImage, setExpandedImage] = useState(null);
+const Modal = ({ isOpen, onClose, title, children }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 print:hidden">
+      <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      <div className="bg-white w-full sm:w-[480px] rounded-t-3xl sm:rounded-2xl shadow-2xl relative z-10 animate-in slide-in-from-bottom-10 sm:slide-in-from-bottom-4 duration-300 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b border-stone-100">
+          <h3 className="text-lg font-semibold text-stone-800">{title}</h3>
+          <button onClick={onClose} className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-full transition-colors">
+            <IconX size={20} />
+          </button>
+        </div>
+        <div className="p-6 overflow-y-auto">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
+  const [entryMode, setEntryMode] = useState(initialData?.type || 'schedule');
   
-  // Lazy Loaded Data
-  const [timelineUpdates, setTimelineUpdates] = useState([]);
-  const [isLoadingTimeline, setIsLoadingTimeline] = useState(false);
-  
-  const fileInputRef = useRef(null);
-  const isSavingRef = useRef(false);
+  let initialHour = '';
+  let initialMin = '';
+  let initialAmPm = 'AM';
 
-  const themeStyles = THEME_MAP[theme] || THEME_MAP.indigo;
-  const cardColorClass = index % 2 === 0 ? themeStyles.light : themeStyles.dark;
+  if (initialData?.time) {
+    const [hStr, mStr] = initialData.time.split(':');
+    let h = parseInt(hStr, 10);
+    initialAmPm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    initialHour = h.toString();
+    initialMin = mStr;
+  }
 
-  // FETCH TIMELINE (With offline fallback detection)
-  useEffect(() => {
-    if (!isOpen) return;
+  const [hour, setHour] = useState(initialHour);
+  const [minute, setMinute] = useState(initialMin);
+  const [ampm, setAmpm] = useState(initialAmPm);
+  const [eventName, setEventName] = useState(initialData?.eventName || '');
+  const [contactNumber, setContactNumber] = useState(initialData?.contactNumber || '');
+  const [link, setLink] = useState(initialData?.link || '');
+  const [priority, setPriority] = useState(initialData?.priority || 'medium');
 
-    // Use memory fallback
-    if (!user || authError) {
-      setTimelineUpdates(localUpdates[project.id] || []);
-      return;
-    }
-
-    setIsLoadingTimeline(true);
-    const updatesDocRef = doc(db, 'artifacts', CANVAS_APP_ID, 'public', 'data', 'project_updates', project.id);
-    
-    const unsubscribe = onSnapshot(updatesDocRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const sortedUpdates = (data.updates || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        setTimelineUpdates(sortedUpdates);
-      } else {
-        setTimelineUpdates([]);
-      }
-      setIsLoadingTimeline(false);
-    }, (error) => {
-      console.error("Error fetching updates:", error);
-      setIsLoadingTimeline(false);
-    });
-
-    return () => unsubscribe();
-  }, [isOpen, user, project.id, authError, localUpdates]);
-
-  const toggleAccordion = () => setIsOpen(!isOpen);
-
-  // Compress images efficiently before previewing
-  const handleImageChange = async (e) => {
-    const files = Array.from(e.target.files);
-    
-    for (const file of files) {
-      try {
-        const compressedBase64 = await compressImage(file);
-        setImagePreviews(prev => [...prev, compressedBase64]);
-      } catch (err) {
-        console.error("Failed to compress image", err);
-      }
-    }
-
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const removeImage = (indexToRemove) => {
-    setImagePreviews(prev => prev.filter((_, i) => i !== indexToRemove));
-  };
-
-  const handleSaveUpdate = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if ((!updateText.trim() && imagePreviews.length === 0) || isSavingRef.current) return;
-    
-    isSavingRef.current = true;
-    
-    const newUpdate = {
-      id: `upd_${Date.now()}_${Math.random().toString(36).substring(2,9)}`,
-      text: updateText,
-      images: imagePreviews,
-      timestamp: new Date().toISOString()
-    };
+    if (!eventName.trim()) return;
 
-    // --- FALLBACK IN-MEMORY MODE SAVE ---
-    if (!user || authError) {
-      const updatedUpdates = [newUpdate, ...(localUpdates[project.id] || [])];
-      setLocalUpdates(prev => ({
-        ...prev,
-        [project.id]: updatedUpdates
-      }));
-      setTimelineUpdates(updatedUpdates);
-      setAllProjects(prev => prev.map(p => {
-        if (p.id === project.id) {
-          return { ...p, updateCount: updatedUpdates.length };
-        }
-        return p;
-      }));
-
-      // Clear Form
-      setUpdateText('');
-      setImagePreviews([]);
-      isSavingRef.current = false;
-      return;
+    let timeString = null;
+    if (entryMode === 'schedule' && hour && minute) {
+      let h24 = parseInt(hour, 10);
+      if (ampm === 'PM' && h24 < 12) h24 += 12;
+      if (ampm === 'AM' && h24 === 12) h24 = 0;
+      timeString = `${h24.toString().padStart(2, '0')}:${minute.padStart(2, '0')}`;
     }
 
-    // --- FIREBASE CLOUD SAVE ---
-    const updatesDocRef = doc(db, 'artifacts', CANVAS_APP_ID, 'public', 'data', 'project_updates', project.id);
-    const projectMetaRef = doc(db, 'artifacts', CANVAS_APP_ID, 'public', 'data', 'projects', project.id);
-
-    try {
-      const docSnap = await getDoc(updatesDocRef);
-      let newCount = 1;
-      
-      if (docSnap.exists()) {
-        const currentUpdates = docSnap.data().updates || [];
-        await setDoc(updatesDocRef, { updates: [newUpdate, ...currentUpdates] });
-        newCount = currentUpdates.length + 1;
-      } else {
-        await setDoc(updatesDocRef, { updates: [newUpdate] });
-      }
-
-      await updateDoc(projectMetaRef, { updateCount: newCount });
-
-      // Clear Form
-      setUpdateText('');
-      setImagePreviews([]);
-    } catch (err) {
-      console.error("Error saving update to Firebase:", err);
-    } finally {
-      isSavingRef.current = false;
-    }
+    onSubmit({ 
+      type: entryMode,
+      time: timeString, 
+      eventName: eventName.trim(), 
+      contactNumber: contactNumber.trim(),
+      link: entryMode === 'todo' ? link.trim() : null,
+      priority 
+    });
   };
 
-  const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  const formatTime = (dateString) => new Date(dateString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const hours = Array.from({length: 12}, (_, i) => (i + 1).toString());
+  const minutes = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
 
   return (
-    <div className={`rounded-xl border shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md ${cardColorClass}`}>
-      {/* Accordion Header */}
-      <button 
-        onClick={toggleAccordion}
-        className="w-full px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between bg-transparent hover:bg-black/5 transition-colors text-left"
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-white/60 shadow-sm hidden sm:block">
-            <FileText className={`w-5 h-5 ${themeStyles.text}`} />
-          </div>
-          <div>
-            <h3 className={`text-sm sm:text-base font-bold ${themeStyles.text}`}>{project.name}</h3>
-            <p className="text-[10px] sm:text-xs opacity-70 font-medium mt-0.5 flex items-center gap-1">
-              <Calendar className="w-3 h-3" /> {formatDate(project.createdAt)}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <span className="text-[10px] sm:text-xs font-semibold bg-white/70 px-2 py-1 rounded-full shadow-sm">
-            {project.updateCount || 0} Updates
-          </span>
-          <div className={`p-1 rounded-full bg-white/70 shadow-sm transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
-            <ChevronDown className="w-4 h-4" />
-          </div>
-        </div>
-      </button>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      
+      {/* Type Toggle */}
+      <div className="flex bg-stone-100 p-1.5 rounded-xl">
+        <button
+          type="button"
+          onClick={() => setEntryMode('schedule')}
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${entryMode === 'schedule' ? 'bg-white text-[#4a3b32] shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
+        >
+          Schedule Entry
+        </button>
+        <button
+          type="button"
+          onClick={() => setEntryMode('todo')}
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${entryMode === 'todo' ? 'bg-white text-[#4a3b32] shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
+        >
+          To-Do Entry
+        </button>
+      </div>
 
-      {/* Accordion Body */}
-      {isOpen && (
-        <div className="border-t border-black/5 bg-white/60 backdrop-blur-sm p-3 sm:p-5 animate-in slide-in-from-top-2 duration-200">
+      {/* Priority Selection */}
+      <div>
+        <label className="block text-sm font-medium text-stone-700 mb-2">Priority</label>
+        <div className="flex gap-2">
+          {['high', 'medium', 'low'].map(level => (
+            <button
+              key={level}
+              type="button"
+              onClick={() => setPriority(level)}
+              className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all capitalize border ${
+                priority === level 
+                  ? level === 'high' ? 'bg-red-50 border-red-200 text-red-700 shadow-sm'
+                  : level === 'medium' ? 'bg-amber-50 border-amber-200 text-amber-700 shadow-sm'
+                  : 'bg-green-50 border-green-200 text-green-700 shadow-sm'
+                  : 'bg-white border-stone-200 text-stone-500 hover:bg-stone-50'
+              }`}
+            >
+              {level}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Custom Time Selection (Only for Schedule) */}
+      {entryMode === 'schedule' && (
+        <div className="animate-in fade-in duration-300">
+          <label className="block text-sm font-medium text-stone-700 mb-2">Time <span className="text-stone-400 font-normal">(Optional)</span></label>
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <select
+                value={hour}
+                onChange={(e) => setHour(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-[#4a3b32] focus:ring-1 focus:ring-[#4a3b32] outline-none bg-white appearance-none text-stone-700"
+              >
+                <option value="">Hr</option>
+                {hours.map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
+            </div>
+            <div className="text-stone-400 flex items-center font-bold">:</div>
+            <div className="flex-1">
+              <select
+                value={minute}
+                onChange={(e) => setMinute(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-[#4a3b32] focus:ring-1 focus:ring-[#4a3b32] outline-none bg-white appearance-none text-stone-700"
+              >
+                <option value="">Min</option>
+                {minutes.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div className="flex-1">
+              <select
+                value={ampm}
+                onChange={(e) => setAmpm(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-[#4a3b32] focus:ring-1 focus:ring-[#4a3b32] outline-none bg-white appearance-none text-stone-700 font-medium"
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div>
+        <label className="block text-sm font-medium text-stone-700 mb-1.5">
+          {entryMode === 'schedule' ? 'Programme / Event Name' : 'Description'} <span className="text-red-500">*</span>
+        </label>
+        <textarea
+          value={eventName}
+          onChange={(e) => setEventName(e.target.value)}
+          required
+          rows={3}
+          className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-[#4a3b32] focus:ring-1 focus:ring-[#4a3b32] outline-none transition-all resize-none"
+          placeholder="Enter details in English or Malayalam..."
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-stone-700 mb-1.5">Contact Number <span className="text-stone-400 font-normal">(Optional)</span></label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
+            <IconPhone size={16} />
+          </div>
+          <input
+            type="tel"
+            value={contactNumber}
+            onChange={(e) => setContactNumber(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:border-[#4a3b32] focus:ring-1 focus:ring-[#4a3b32] outline-none transition-all"
+            placeholder="Mobile or office number"
+          />
+        </div>
+      </div>
+
+      {/* Link Selection (Only for To-Do) */}
+      {entryMode === 'todo' && (
+        <div className="animate-in fade-in duration-300">
+          <label className="block text-sm font-medium text-stone-700 mb-1.5">Link <span className="text-stone-400 font-normal">(Optional)</span></label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
+              <IconLink size={16} />
+            </div>
+            <input
+              type="url"
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:border-[#4a3b32] focus:ring-1 focus:ring-[#4a3b32] outline-none transition-all"
+              placeholder="https://..."
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="pt-2 flex gap-3">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 py-3.5 bg-stone-100 text-stone-700 rounded-xl font-medium hover:bg-stone-200 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={isSaving || !eventName.trim()}
+          className="flex-1 py-3.5 bg-[#4a3b32] text-white rounded-xl font-medium hover:bg-[#3a2e26] transition-colors disabled:opacity-50 flex justify-center items-center"
+        >
+          {isSaving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Save'}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+const CalendarModal = ({ isOpen, onClose, selectedDate, onSelectDate }) => {
+  const [viewDate, setViewDate] = useState(new Date(selectedDate));
+
+  useEffect(() => {
+    if (isOpen) setViewDate(new Date(selectedDate));
+  }, [isOpen, selectedDate]);
+
+  if (!isOpen) return null;
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+
+  const days = [];
+  for (let i = 0; i < firstDay; i++) {
+    days.push(null);
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    days.push(new Date(year, month, i));
+  }
+
+  const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
+  const monthName = viewDate.toLocaleString('default', { month: 'long' });
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Select Date">
+      <div className="flex items-center justify-between mb-6 bg-stone-50 p-2 rounded-xl border border-stone-200">
+        <button onClick={prevMonth} className="p-2 text-stone-600 hover:bg-stone-200 rounded-lg transition-colors"><IconChevronLeft size={20}/></button>
+        <span className="font-semibold text-stone-800">{monthName} {year}</span>
+        <button onClick={nextMonth} className="p-2 text-stone-600 hover:bg-stone-200 rounded-lg transition-colors"><IconChevronRight size={20}/></button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 text-center mb-2">
+        {weekDays.map(day => (
+          <div key={day} className="text-xs font-semibold text-stone-400 uppercase tracking-wider py-1">{day}</div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((d, i) => {
+          if (!d) return <div key={i} className="h-10" />;
           
-          {/* Add Update Box */}
-          <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 shadow-sm mb-5">
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Add Update</h4>
-            <form onSubmit={handleSaveUpdate}>
-              <textarea
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 min-h-[80px] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white resize-y transition-colors text-sm text-slate-700"
-                placeholder="What's the latest update?"
-                value={updateText}
-                onChange={(e) => setUpdateText(e.target.value)}
-              />
-              
-              {imagePreviews.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {imagePreviews.map((preview, i) => (
-                    <div key={i} className="relative inline-block rounded-md overflow-hidden border border-slate-200 shadow-sm group">
-                      <img src={preview} alt={`Preview ${i}`} className="h-10 w-10 sm:h-12 sm:w-12 object-cover bg-slate-100" />
-                      <button 
-                        type="button" 
-                        onClick={() => removeImage(i)}
-                        className="absolute top-0.5 right-0.5 bg-slate-900/60 text-white p-0.5 rounded-full hover:bg-red-500 transition-colors backdrop-blur-sm"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+          const isSelected = d.toDateString() === selectedDate.toDateString();
+          const isToday = d.toDateString() === new Date().toDateString();
 
-              <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                <div>
-                  <input type="file" accept="image/*" multiple className="hidden" ref={fileInputRef} onChange={handleImageChange} />
-                  <button 
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 px-3 py-2 rounded-md transition-colors"
-                  >
-                    <ImageIcon className="w-3.5 h-3.5" /> Attach Images
-                  </button>
-                </div>
-                
-                <button 
-                  type="submit"
-                  disabled={!updateText.trim() && imagePreviews.length === 0}
-                  className="flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md font-semibold transition-all shadow-sm active:scale-95 text-xs sm:text-sm"
-                >
-                  Save <Send className="w-3.5 h-3.5" />
-                </button>
+          return (
+            <button
+              key={i}
+              onClick={() => {
+                onSelectDate(d);
+                onClose();
+              }}
+              className={`h-10 w-full rounded-full flex items-center justify-center text-sm transition-colors ${
+                isSelected ? 'bg-[#4a3b32] text-white font-bold shadow-md' :
+                isToday ? 'bg-amber-100 text-amber-900 font-semibold' :
+                'text-stone-700 hover:bg-stone-100'
+              }`}
+            >
+              {d.getDate()}
+            </button>
+          );
+        })}
+      </div>
+      
+      <div className="mt-6">
+        <button 
+          onClick={() => { onSelectDate(new Date()); onClose(); }}
+          className="w-full py-3 bg-stone-100 text-stone-700 rounded-xl font-medium hover:bg-stone-200 transition-colors"
+        >
+          Go to Today
+        </button>
+      </div>
+    </Modal>
+  );
+};
+
+const PrintModal = ({ isOpen, onClose, onPrint, canViewPriority, viewMode }) => {
+  const [timeFilter, setTimeFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  
+  const handlePrint = () => {
+    onPrint({ timeFilter, priorityFilter, viewMode });
+    onClose();
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={`Export ${viewMode === 'todo' ? 'To-Dos' : 'Schedule'}`}>
+      <div className="space-y-6">
+        
+        {/* Time Scope - Only show if Schedule */}
+        {viewMode === 'schedule' && (
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-3">Time Scope</label>
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { id: 'all', label: 'All Programmes' },
+                { id: 'am', label: 'Before Noon Only' },
+                { id: 'pm', label: 'After Noon Only' },
+              ].map(opt => (
+                <label key={opt.id} className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all ${timeFilter === opt.id ? 'border-[#4a3b32] bg-stone-100' : 'border-stone-200'}`}>
+                  <input 
+                    type="radio" 
+                    name="timeFilter" 
+                    checked={timeFilter === opt.id} 
+                    onChange={() => setTimeFilter(opt.id)} 
+                    className="w-4 h-4 text-[#4a3b32] focus:ring-[#4a3b32] border-stone-300"
+                  />
+                  <span className={`ml-3 text-sm font-medium ${timeFilter === opt.id ? 'text-[#4a3b32]' : 'text-stone-700'}`}>{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Priority Filter */}
+        {canViewPriority && (
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-3">Priority Filter</label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { id: 'all', label: 'All Priorities' },
+                { id: 'high', label: 'High Only' },
+                { id: 'medium', label: 'Medium Only' },
+                { id: 'low', label: 'Low Only' },
+              ].map(opt => (
+                <label key={opt.id} className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all ${priorityFilter === opt.id ? 'border-[#4a3b32] bg-stone-50' : 'border-stone-200'}`}>
+                  <input 
+                    type="radio" 
+                    name="priorityFilter" 
+                    checked={priorityFilter === opt.id} 
+                    onChange={() => setPriorityFilter(opt.id)} 
+                    className="w-4 h-4 text-[#4a3b32] focus:ring-[#4a3b32] border-stone-300"
+                  />
+                  <span className={`ml-3 text-sm font-medium ${priorityFilter === opt.id ? 'text-[#4a3b32]' : 'text-stone-700'}`}>{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        <button
+          onClick={handlePrint}
+          className="w-full py-3.5 bg-[#4a3b32] text-white rounded-xl font-medium hover:bg-[#3a2e26] transition-colors flex justify-center items-center gap-2"
+        >
+          <IconPrinter size={18} />
+          Generate & Download PDF
+        </button>
+      </div>
+    </Modal>
+  );
+};
+
+const ProgramCard = ({ program }) => {
+  const { permissions, deleteProgram, toggleCompletion, setEditProgram } = useContext(AppContext);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const handleToggle = async () => {
+    if (!permissions.canComplete) return;
+    setIsUpdating(true);
+    await toggleCompletion(program.id, program.completed);
+    setIsUpdating(false);
+  };
+
+  const handleDeleteClick = () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      setTimeout(() => setConfirmDelete(false), 3000);
+      return;
+    }
+    deleteProgram(program.id);
+  };
+
+  let displayTime = '—';
+  let ampm = '';
+  if (program.time && program.type !== 'todo') {
+    const [h, m] = program.time.split(':');
+    const hour = parseInt(h, 10);
+    ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    displayTime = `${displayHour}:${m}`;
+  }
+
+  const priorityStyles = {
+    high: 'bg-red-50 text-red-600 border-red-100',
+    medium: 'bg-amber-50 text-amber-700 border-amber-200',
+    low: 'bg-green-50 text-green-700 border-green-200'
+  };
+
+  const priorityName = program.priority || 'medium';
+  const showPriority = permissions.canViewPriority && !program.completed;
+  const isTodo = program.type === 'todo';
+
+  return (
+    <div className={`group bg-white rounded-2xl p-4 sm:p-5 shadow-sm border transition-all duration-300 flex items-start gap-4 relative overflow-hidden ${
+      program.completed 
+        ? 'border-stone-100 bg-stone-50/50' 
+        : 'border-stone-200 hover:shadow-md hover:border-stone-300'
+    }`}>
+      
+      {/* Priority Indicator strip on the left */}
+      {permissions.canViewPriority && (
+        <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
+          program.completed ? 'bg-stone-200' :
+          priorityName === 'high' ? 'bg-red-400' :
+          priorityName === 'medium' ? 'bg-amber-500' : 'bg-green-400'
+        }`}></div>
+      )}
+
+      {/* Time / Type Column */}
+      <div className="w-16 sm:w-20 flex-shrink-0 pl-1 text-center sm:text-left flex flex-col justify-center items-center sm:items-start pt-1">
+        {isTodo ? (
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${program.completed ? 'bg-stone-100 text-stone-300' : 'bg-amber-50 text-amber-700'}`}>
+            <IconBookOpen size={16} />
+          </div>
+        ) : program.time ? (
+          <>
+            <span className={`text-base sm:text-lg font-bold tracking-tight ${program.completed ? 'text-stone-400' : 'text-stone-800'}`}>
+              {displayTime}
+            </span>
+            <span className={`text-xs font-semibold ${program.completed ? 'text-stone-400' : 'text-amber-800'}`}>
+              {ampm}
+            </span>
+          </>
+        ) : (
+          <span className="text-stone-300 text-xl font-light pl-2">—</span>
+        )}
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 min-w-0 pt-0.5">
+        <div className="flex items-start gap-2 mb-1">
+          {showPriority && (
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wide ${priorityStyles[priorityName]}`}>
+              {priorityName}
+            </span>
+          )}
+        </div>
+        
+        <p className={`text-base sm:text-[17px] font-medium leading-snug whitespace-pre-wrap break-words ${
+          program.completed ? 'text-stone-500 line-through decoration-stone-300' : 'text-stone-900'
+        }`}>
+          {program.eventName}
+        </p>
+        
+        {program.contactNumber && (
+          <div className="mt-2 flex items-center text-sm">
+            <IconPhone size={14} className={`mr-1.5 flex-shrink-0 ${program.completed ? 'text-stone-400' : 'text-[#4a3b32]'}`} />
+            <a 
+              href={`tel:${program.contactNumber}`} 
+              className={`truncate font-medium transition-colors ${program.completed ? 'text-stone-400 cursor-default pointer-events-none' : 'text-[#4a3b32] hover:text-[#2d241f] hover:underline'}`}
+              onClick={(e) => program.completed && e.preventDefault()}
+            >
+              {program.contactNumber}
+            </a>
+          </div>
+        )}
+
+        {isTodo && program.link && (
+          <div className="mt-1 flex items-center text-sm">
+            <IconLink size={14} className={`mr-1.5 flex-shrink-0 ${program.completed ? 'text-stone-400' : 'text-blue-600'}`} />
+            <a 
+              href={program.link.startsWith('http') ? program.link : `https://${program.link}`} 
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`truncate font-medium transition-colors ${program.completed ? 'text-stone-400 cursor-default pointer-events-none' : 'text-blue-600 hover:text-blue-800 hover:underline'}`}
+              onClick={(e) => program.completed && e.preventDefault()}
+            >
+              {program.link}
+            </a>
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+        {(permissions.canEdit) && (
+          <button 
+            onClick={() => setEditProgram(program)}
+            className="p-2 text-stone-400 hover:text-amber-700 hover:bg-amber-50 rounded-full transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 sm:flex hidden"
+            aria-label="Edit"
+          >
+            <IconEdit2 size={18} />
+          </button>
+        )}
+        
+        {permissions.canDelete && (
+          <button 
+            onClick={handleDeleteClick}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all sm:flex hidden items-center ${
+              confirmDelete 
+                ? 'bg-red-100 text-red-700 hover:bg-red-200 opacity-100' 
+                : 'text-stone-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100'
+            }`}
+          >
+            {confirmDelete ? 'Confirm?' : <IconTrash2 size={18} />}
+          </button>
+        )}
+        
+        {permissions.canComplete && (
+          <button 
+            onClick={handleToggle}
+            disabled={isUpdating}
+            className={`p-2 rounded-full transition-all focus:outline-none ${
+              program.completed 
+                ? 'text-green-600 hover:bg-green-50' 
+                : 'text-stone-300 hover:text-stone-500 hover:bg-stone-100'
+            }`}
+          >
+            {isUpdating ? (
+              <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
+            ) : program.completed ? (
+              <IconCheckCircle size={24} className="sm:w-7 sm:h-7" />
+            ) : (
+              <IconCircle size={24} className="sm:w-7 sm:h-7" />
+            )}
+          </button>
+        )}
+        
+        {!permissions.canComplete && program.completed && (
+          <div className="p-2">
+            <IconCheckCircle size={20} className="text-green-600" />
+          </div>
+        )}
+
+        {/* Mobile action menu alternative */}
+        <div className="sm:hidden flex flex-col gap-1">
+          {permissions.canEdit && (
+            <button onClick={() => setEditProgram(program)} className="p-2 text-stone-400 hover:text-amber-700 hover:bg-amber-50 rounded-full transition-colors">
+              <IconEdit2 size={18} />
+            </button>
+          )}
+          {permissions.canDelete && (
+             <button onClick={handleDeleteClick} className={`p-2 rounded-full transition-colors ${confirmDelete ? 'text-red-700 bg-red-100' : 'text-stone-400 hover:text-red-600 hover:bg-red-50'}`}>
+              <IconTrash2 size={18} />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MainApp = () => {
+  const { user, logout } = useContext(AuthContext);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [programsCache, setProgramsCache] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  const [viewMode, setViewMode] = useState('schedule'); // 'schedule' | 'todo'
+  const [sortBy, setSortBy] = useState('time');
+  
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [editProgram, setEditProgram] = useState(null);
+  const [isPrintOpen, setIsPrintOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  
+  const [printConfig, setPrintConfig] = useState({ timeFilter: 'all', priorityFilter: 'all', viewMode: 'schedule' });
+
+  const permissions = useMemo(() => getPermissions(user.role), [user.role]);
+  const dateStr = currentDate.toISOString().split('T')[0];
+  const programs = programsCache[dateStr] || [];
+
+  const fetchPrograms = async (dateKey, forceRefresh = false) => {
+    if (!forceRefresh && programsCache[dateKey]) {
+      setIsLoading(false);
+      return; 
+    }
+    
+    if (forceRefresh) setIsRefreshing(true);
+    else setIsLoading(true);
+    
+    try {
+      const q = query(collection(db, 'programs'), where('date', '==', dateKey));
+      const snapshot = await getDocs(q);
+      const data = [];
+      snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
+      setProgramsCache(prev => ({ ...prev, [dateKey]: data }));
+    } catch (err) {
+      console.error("Firestore error:", err);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPrograms(dateStr);
+  }, [dateStr]);
+
+  const displayPrograms = useMemo(() => {
+    // First filter by active view mode
+    let filtered = programs.filter(p => {
+      if (viewMode === 'schedule') return !p.type || p.type === 'schedule';
+      return p.type === 'todo';
+    });
+
+    let sorted = [...filtered];
+
+    if (sortBy === 'time' && viewMode === 'schedule') {
+      sorted.sort((a, b) => {
+        if (!a.time && !b.time) return a.createdAt - b.createdAt;
+        if (!a.time) return 1;
+        if (!b.time) return -1;
+        return a.time.localeCompare(b.time);
+      });
+    } else if (sortBy === 'priority' && permissions.canViewPriority) {
+      const weight = { high: 3, medium: 2, low: 1 };
+      sorted.sort((a, b) => {
+        const wA = weight[a.priority || 'medium'];
+        const wB = weight[b.priority || 'medium'];
+        if (wB !== wA) return wB - wA;
+        
+        if (!a.time && !b.time) return a.createdAt - b.createdAt;
+        if (!a.time) return 1;
+        if (!b.time) return -1;
+        return (a.time || '').localeCompare(b.time || '');
+      });
+    } else if (viewMode === 'todo') {
+      // Default sorting for To-Dos (Priority then Creation Date)
+      const weight = { high: 3, medium: 2, low: 1 };
+      sorted.sort((a, b) => {
+        if (permissions.canViewPriority) {
+          const wA = weight[a.priority || 'medium'];
+          const wB = weight[b.priority || 'medium'];
+          if (wB !== wA) return wB - wA;
+        }
+        return (a.createdAt || 0) - (b.createdAt || 0);
+      });
+    }
+    
+    return sorted;
+  }, [programs, sortBy, permissions.canViewPriority, viewMode]);
+
+  const printPrograms = useMemo(() => {
+    let filtered = programs.filter(p => {
+      if (printConfig.viewMode === 'schedule') return !p.type || p.type === 'schedule';
+      return p.type === 'todo';
+    });
+
+    if (printConfig.viewMode === 'schedule' && printConfig.timeFilter !== 'all') {
+      filtered = filtered.filter(p => {
+        if (!p.time) return false; 
+        const hour = parseInt(p.time.split(':')[0], 10);
+        if (printConfig.timeFilter === 'am') return hour < 12;
+        if (printConfig.timeFilter === 'pm') return hour >= 12;
+        return true;
+      });
+    }
+
+    if (printConfig.priorityFilter !== 'all' && permissions.canViewPriority) {
+      filtered = filtered.filter(p => (p.priority || 'medium') === printConfig.priorityFilter);
+    }
+    
+    // Sort logic similar to display
+    const weight = { high: 3, medium: 2, low: 1 };
+    filtered.sort((a, b) => {
+      const wA = weight[a.priority || 'medium'];
+      const wB = weight[b.priority || 'medium'];
+      if (wB !== wA) return wB - wA;
+      if (!a.time && !b.time) return a.createdAt - b.createdAt;
+      if (!a.time) return 1;
+      if (!b.time) return -1;
+      return (a.time || '').localeCompare(b.time || '');
+    });
+
+    return filtered;
+  }, [programs, printConfig, permissions.canViewPriority]);
+
+  const navDate = (days) => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(newDate.getDate() + days);
+    setCurrentDate(newDate);
+  };
+
+  const handleAdd = async (data) => {
+    setIsSaving(true);
+    try {
+      const newDoc = { 
+        ...data, 
+        date: dateStr,
+        completed: false,
+        createdAt: Date.now()
+      };
+      const docRef = await addDoc(collection(db, 'programs'), newDoc);
+      setProgramsCache(prev => ({
+        ...prev,
+        [dateStr]: [...(prev[dateStr] || []), { id: docRef.id, ...newDoc }]
+      }));
+      setIsAddOpen(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleEdit = async (data) => {
+    setIsSaving(true);
+    try {
+      await updateDoc(doc(db, 'programs', editProgram.id), data);
+      setProgramsCache(prev => ({
+        ...prev,
+        [dateStr]: prev[dateStr].map(p => p.id === editProgram.id ? { ...p, ...data } : p)
+      }));
+      setEditProgram(null);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deleteProgram = async (id) => {
+    try {
+      await deleteDoc(doc(db, 'programs', id));
+      setProgramsCache(prev => ({
+        ...prev,
+        [dateStr]: prev[dateStr].filter(p => p.id !== id)
+      }));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const toggleCompletion = async (id, status) => {
+    try {
+      await updateDoc(doc(db, 'programs', id), { completed: !status });
+      setProgramsCache(prev => ({
+        ...prev,
+        [dateStr]: prev[dateStr].map(p => p.id === id ? { ...p, completed: !status } : p)
+      }));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handlePrintTrigger = (config) => {
+    setPrintConfig(config);
+    setTimeout(() => {
+      window.print();
+    }, 100);
+  };
+
+  const contextValue = {
+    programs, permissions, deleteProgram, toggleCompletion, setEditProgram
+  };
+
+  return (
+    <AppContext.Provider value={contextValue}>
+      <div className="min-h-screen bg-stone-100 text-stone-900 font-sans flex flex-col pb-20 sm:pb-0">
+        
+        {/* Top Header */}
+        <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-stone-200 print:hidden shadow-sm">
+          <div className="max-w-4xl mx-auto px-4 h-[72px] flex items-center justify-between gap-2">
+            
+            {/* Identity (Left) */}
+            <div className="flex items-center gap-3 hidden md:flex">
+              <div className="w-9 h-9 bg-[#4a3b32] rounded-lg flex items-center justify-center shadow-inner">
+                <IconBookOpen size={18} className="text-amber-100" />
               </div>
-            </form>
+              <div className="leading-tight">
+                <h1 className="font-semibold text-sm text-stone-900 tracking-tight">KM Shaji</h1>
+                <p className="text-[10px] text-stone-500 font-medium">LSGD Minister</p>
+              </div>
+            </div>
+
+            {/* Navigation & Toggle (Center) */}
+            <div className="flex-1 flex flex-col sm:flex-row justify-center items-center gap-1 sm:gap-6">
+               <div className="flex items-center gap-4">
+                 <button 
+                  onClick={() => navDate(-1)}
+                  className="p-1.5 text-stone-400 hover:text-stone-900 transition-colors"
+                >
+                  <IconChevronLeft size={20} />
+                </button>
+                <button 
+                  onClick={() => setIsCalendarOpen(true)}
+                  className="flex flex-col items-center group px-2"
+                >
+                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest group-hover:text-[#4a3b32] transition-colors">
+                    {currentDate.toLocaleDateString('en-US', { weekday: 'long' })}
+                  </span>
+                  <span className="text-sm sm:text-base font-bold tracking-tight text-stone-800 group-hover:text-[#4a3b32] transition-colors">
+                    {currentDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                </button>
+                <button 
+                  onClick={() => navDate(1)}
+                  className="p-1.5 text-stone-400 hover:text-stone-900 transition-colors"
+                >
+                  <IconChevronRight size={20} />
+                </button>
+               </div>
+               
+               {/* View Toggle */}
+               <div className="flex items-center bg-stone-100 p-1 rounded-full border border-stone-200">
+                  <button 
+                    onClick={() => setViewMode('schedule')} 
+                    className={`px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-all ${viewMode === 'schedule' ? 'bg-white shadow-sm text-[#4a3b32]' : 'text-stone-500 hover:text-stone-700'}`}
+                  >
+                    Schedule
+                  </button>
+                  <button 
+                    onClick={() => setViewMode('todo')} 
+                    className={`px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-all ${viewMode === 'todo' ? 'bg-white shadow-sm text-[#4a3b32]' : 'text-stone-500 hover:text-stone-700'}`}
+                  >
+                    To Do
+                  </button>
+               </div>
+            </div>
+            
+            {/* Actions (Right) */}
+            <div className="flex items-center gap-1 sm:gap-2 justify-end">
+              <button 
+                onClick={() => fetchPrograms(dateStr, true)}
+                className={`p-2 text-[#7a6b63] hover:text-[#3a2e26] hover:bg-[#eae6e1] rounded-lg transition-all ${isRefreshing ? 'animate-spin text-[#4a3b32]' : ''}`}
+                title="Refresh Data"
+              >
+                <IconRefresh size={18} />
+              </button>
+              <button 
+                onClick={() => setIsPrintOpen(true)}
+                className="p-2 flex items-center gap-2 text-[#7a6b63] hover:text-[#3a2e26] hover:bg-[#eae6e1] rounded-lg transition-colors text-sm font-medium"
+                title="Print Schedule"
+              >
+                <IconPrinter size={18} />
+                <span className="hidden sm:inline">Export</span>
+              </button>
+              <div className="w-px h-5 bg-[#d6cfc7] mx-1 hidden sm:block"></div>
+              <button 
+                onClick={() => setIsLogoutConfirmOpen(true)}
+                className="p-2 text-[#7a6b63] hover:text-[#3a2e26] hover:bg-[#eae6e1] rounded-lg transition-colors"
+                title="Logout"
+              >
+                <IconLogOut size={18} />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 max-w-3xl w-full mx-auto px-4 pt-6 sm:pt-8 print:hidden">
+          
+          {/* Controls Bar */}
+          <div className="flex justify-end mb-4 h-10">
+            {permissions.canViewPriority && displayPrograms.length > 0 && viewMode === 'schedule' && (
+              <button
+                onClick={() => setSortBy(prev => prev === 'time' ? 'priority' : 'time')}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-stone-200 rounded-full shadow-sm hover:bg-stone-50 transition-colors text-xs font-medium text-stone-600"
+              >
+                <IconSort size={14} className="text-stone-400" />
+                Sort: {sortBy === 'time' ? 'By Time' : 'By Priority'}
+              </button>
+            )}
           </div>
 
-          {/* Timeline of Updates */}
-          <div>
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" /> History
-            </h4>
-            
-            {isLoadingTimeline ? (
-              <div className="flex flex-col items-center justify-center py-6 text-slate-400 gap-2">
-                <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-                <span className="text-xs font-medium">Loading timeline...</span>
+          {/* Diary / To-Do List */}
+          <div className="space-y-3 sm:space-y-4 mb-24 relative min-h-[300px]">
+            {isLoading ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-stone-200 border-t-[#4a3b32] rounded-full animate-spin"></div>
               </div>
-            ) : timelineUpdates.length === 0 ? (
-              <p className="text-slate-500 italic text-xs text-center py-3">No updates yet.</p>
+            ) : displayPrograms.length > 0 ? (
+              displayPrograms.map((program) => (
+                <ProgramCard key={program.id} program={program} />
+              ))
             ) : (
-              <div className="relative border-l-2 border-slate-300 ml-2 md:ml-3 space-y-4 sm:space-y-6 pb-2">
-                {timelineUpdates.map((update) => (
-                  <div key={update.id} className="relative pl-5 sm:pl-8">
-                    {/* Timeline Dot */}
-                    <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-2 border-indigo-500 shadow-sm z-10 flex items-center justify-center">
-                      <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>
-                    </div>
-                    
-                    {/* Update Content Card */}
-                    <div className="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-100">
-                      <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded flex-shrink-0">
-                          <CheckCircle2 className="w-3 h-3" /> Published
-                        </span>
-                        <span className="text-[10px] sm:text-xs font-medium text-slate-400">
-                          {formatDate(update.timestamp)} • {formatTime(update.timestamp)}
-                        </span>
-                      </div>
-                      
-                      {update.text && (
-                        <div className="text-slate-700 whitespace-pre-wrap leading-relaxed text-xs sm:text-sm">
-                          {update.text}
-                        </div>
-                      )}
-                      
-                      {update.images && update.images.length > 0 && (
-                        <div className="mt-2.5 flex flex-wrap gap-2">
-                          {update.images.map((img, i) => (
-                            <button 
-                              key={i}
-                              onClick={() => setExpandedImage(img)}
-                              className="relative group flex items-center justify-center bg-slate-50 border border-slate-200 rounded-md overflow-hidden shadow-sm hover:shadow-md transition-all h-10 w-10 sm:h-12 sm:w-12"
-                            >
-                              <img src={img} alt={`Attachment ${i}`} className="w-full h-full object-cover" />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+              <div className="flex flex-col items-center justify-center pt-16 pb-8 text-center animate-in fade-in duration-500">
+                <div className="w-20 h-20 bg-stone-200/50 rounded-full flex items-center justify-center mb-4 text-stone-400">
+                  <IconCalendar size={32} />
+                </div>
+                <h3 className="text-lg font-semibold text-stone-800 mb-1">
+                  No {viewMode === 'todo' ? 'To-Dos' : 'programmes'} found
+                </h3>
+                <p className="text-stone-500 text-sm mb-6">There are no entries for this date.</p>
               </div>
             )}
           </div>
-        </div>
-      )}
+        </main>
 
-      {/* Fullscreen Image Modal */}
-      {expandedImage && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm" onClick={() => setExpandedImage(null)}>
-          <div className="relative max-w-5xl w-full max-h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
+        {/* Floating Action Button */}
+        {permissions.canAdd && (
+          <div className="fixed bottom-20 sm:bottom-8 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 z-40 print:hidden">
             <button 
-              onClick={() => setExpandedImage(null)}
-              className="absolute -top-12 right-0 sm:-right-12 sm:top-0 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors backdrop-blur-sm"
+              onClick={() => setIsAddOpen(true)}
+              className="flex items-center justify-center gap-2 bg-[#4a3b32] text-white shadow-lg shadow-[#4a3b32]/30 hover:shadow-xl hover:-translate-y-1 hover:bg-[#3a2e26] transition-all w-14 h-14 sm:w-auto sm:h-12 sm:px-6 rounded-full"
             >
-              <X className="w-6 h-6" />
+              <IconPlus size={24} className="sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline font-medium">Add</span>
             </button>
-            <img src={expandedImage} alt="Expanded Attachment" className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" />
+          </div>
+        )}
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="fixed bottom-0 w-full bg-white border-t border-stone-200 pb-safe sm:hidden z-30 print:hidden shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
+          <div className="flex justify-around items-center h-16">
+            <button onClick={() => { window.scrollTo(0, 0); setViewMode('schedule'); }} className={`flex flex-col items-center justify-center w-full h-full ${viewMode === 'schedule' ? 'text-[#4a3b32]' : 'text-[#8a7f78]'}`}>
+              <IconBookOpen size={20} className="mb-1" />
+              <span className="text-[10px] font-semibold">Diary</span>
+            </button>
+            <button onClick={() => setIsCalendarOpen(true)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26]">
+              <IconCalendar size={20} className="mb-1" />
+              <span className="text-[10px] font-medium">Calendar</span>
+            </button>
+            <button onClick={() => setIsLogoutConfirmOpen(true)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26]">
+              <IconUser size={20} className="mb-1" />
+              <span className="text-[10px] font-medium">Exit</span>
+            </button>
+          </div>
+        </nav>
+
+        {/* Modals */}
+        <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="New Entry">
+          <ProgramForm onSubmit={handleAdd} onCancel={() => setIsAddOpen(false)} isSaving={isSaving} />
+        </Modal>
+
+        <Modal isOpen={!!editProgram} onClose={() => setEditProgram(null)} title="Edit Entry">
+          {editProgram && (
+            <ProgramForm 
+              initialData={editProgram} 
+              onSubmit={handleEdit} 
+              onCancel={() => setEditProgram(null)} 
+              isSaving={isSaving} 
+            />
+          )}
+        </Modal>
+
+        <PrintModal 
+          isOpen={isPrintOpen} 
+          onClose={() => setIsPrintOpen(false)}
+          onPrint={handlePrintTrigger}
+          canViewPriority={permissions.canViewPriority}
+          viewMode={viewMode}
+        />
+
+        <CalendarModal 
+          isOpen={isCalendarOpen} 
+          onClose={() => setIsCalendarOpen(false)} 
+          selectedDate={currentDate} 
+          onSelectDate={setCurrentDate} 
+        />
+
+        <Modal isOpen={isLogoutConfirmOpen} onClose={() => setIsLogoutConfirmOpen(false)} title="Confirm Logout">
+          <div className="text-center py-4">
+            <div className="w-16 h-16 bg-[#eae6e1] rounded-full flex items-center justify-center mx-auto mb-4 text-[#4a3b32]">
+              <IconLogOut size={28} />
+            </div>
+            <h3 className="text-lg font-semibold text-[#3a2e26] mb-2">Are you sure you want to exit?</h3>
+            <p className="text-[#7a6b63] text-sm mb-8">You will need to sign in again to access the schedule.</p>
+            
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setIsLogoutConfirmOpen(false)}
+                className="flex-1 py-3 bg-[#eae6e1] text-[#4a3b32] rounded-xl font-medium hover:bg-[#dcd7d1] transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={logout}
+                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* PRINT VIEW */}
+        <div className="hidden print:block print:bg-white print:text-black">
+          <div className="print-header mb-8 text-center border-b-[3px] border-[#4a3b32] pb-4">
+            <h1 className="text-2xl font-bold uppercase tracking-widest mb-1 text-[#2d241f]">KM Shaji</h1>
+            <h2 className="text-lg font-semibold text-stone-600 mb-4">LSGD Minister, Kerala</h2>
+            <h3 className="text-xl font-bold border border-stone-300 inline-block px-6 py-2 bg-stone-50">
+              {formatDate(currentDate)} – {printConfig.viewMode === 'todo' ? 'To-Do List' : 'Programme Schedule'}
+            </h3>
+            
+            {(printConfig.timeFilter !== 'all' || printConfig.priorityFilter !== 'all') && (
+              <p className="text-sm text-stone-500 mt-2 font-medium">
+                Export Filter: 
+                {printConfig.timeFilter !== 'all' && printConfig.viewMode === 'schedule' && ` ${printConfig.timeFilter === 'am' ? 'Morning Only' : 'Afternoon Only'}`}
+                {printConfig.timeFilter !== 'all' && printConfig.priorityFilter !== 'all' && printConfig.viewMode === 'schedule' && ' | '}
+                {printConfig.priorityFilter !== 'all' && ` ${printConfig.priorityFilter.charAt(0).toUpperCase() + printConfig.priorityFilter.slice(1)} Priority Only`}
+              </p>
+            )}
+          </div>
+
+          <table className="w-full text-left border-collapse print-table">
+            <thead>
+              <tr className="border-b-[3px] border-[#4a3b32] bg-stone-100 print:bg-[#f5f5f4]">
+                {printConfig.viewMode === 'schedule' && (
+                  <th className="py-3 px-4 w-32 font-bold text-sm uppercase tracking-wider text-[#2d241f]">Time</th>
+                )}
+                <th className="py-3 px-4 font-bold text-sm uppercase tracking-wider text-[#2d241f]">
+                  {printConfig.viewMode === 'schedule' ? 'Programme' : 'Description'}
+                </th>
+                <th className="py-3 px-4 w-48 font-bold text-sm uppercase tracking-wider text-[#2d241f]">
+                  {printConfig.viewMode === 'schedule' ? 'Contact' : 'Details'}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {printPrograms.length === 0 ? (
+                <tr>
+                  <td colSpan={printConfig.viewMode === 'schedule' ? "3" : "2"} className="py-8 text-center italic text-stone-500 border-b border-stone-300">
+                    No entries scheduled matching these criteria.
+                  </td>
+                </tr>
+              ) : (
+                printPrograms.map(p => {
+                  let displayTime = "—";
+                  if (p.time && p.type !== 'todo') {
+                    const [h, m] = p.time.split(':');
+                    const hour = parseInt(h, 10);
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    const displayHour = hour % 12 || 12;
+                    displayTime = `${displayHour}:${m} ${ampm}`;
+                  }
+
+                  return (
+                    <tr key={p.id} className="border-b border-stone-300 page-break-inside-avoid">
+                      {printConfig.viewMode === 'schedule' && (
+                        <td className="py-4 px-4 font-semibold text-sm align-top whitespace-nowrap text-[#2d241f]">{displayTime}</td>
+                      )}
+                      <td className="py-4 px-4 align-top whitespace-pre-wrap text-stone-900 leading-relaxed">
+                        <div className="flex items-center gap-2 mb-1">
+                          {p.completed && <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Done</span>}
+                          {p.priority && <span className="text-[10px] font-bold border px-1.5 py-0.5 rounded uppercase tracking-wide text-stone-600 border-stone-300">{p.priority}</span>}
+                        </div>
+                        <span className={p.completed ? "line-through text-stone-500" : ""}>{p.eventName}</span>
+                      </td>
+                      <td className="py-4 px-4 align-top text-sm font-medium text-stone-800">
+                        {p.contactNumber && <div>Ph: {p.contactNumber}</div>}
+                        {p.type === 'todo' && p.link && <div className="text-blue-600 font-normal break-all">Link: {p.link}</div>}
+                        {!p.contactNumber && (!p.link || p.type !== 'todo') && "—"}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+          <div className="mt-8 text-right text-xs text-stone-500 italic">
+            Generated on {new Date().toLocaleString('en-IN')}
           </div>
         </div>
-      )}
-    </div>
+
+      </div>
+    </AppContext.Provider>
+  );
+};
+
+export default function App() {
+  const [user, setUser] = useState(null);
+
+  const login = (role) => {
+    setUser({ id: 'local-user', role });
+  };
+
+  const logout = () => {
+    setUser(null);
+  };
+
+  return (
+    <>
+      <style>{`
+        /* Essential base styles */
+        body { margin: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        /* Safe area padding for mobile notches */
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        
+        /* PRINT SPECIFIC CSS */
+        @media print {
+          @page { size: A4 portrait; margin: 20mm; }
+          body { background: white !important; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          
+          /* Hide everything except print container */
+          body > #root > div > :not(.print\\:block) { display: none !important; }
+          
+          /* Table styling */
+          .print-table th { -webkit-print-color-adjust: exact; background-color: #f5f5f4 !important; }
+          .page-break-inside-avoid { page-break-inside: avoid; }
+        }
+      `}</style>
+      <AuthContext.Provider value={{ user, login, logout }}>
+        {user ? <MainApp /> : <LoginCover />}
+      </AuthContext.Provider>
+    </>
   );
 }
