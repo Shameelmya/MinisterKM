@@ -747,14 +747,7 @@ const ProgramCard = ({ program }) => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0 pt-0.5">
-        <div className="flex items-start gap-2 mb-1">
-          {showPriority && (
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wide ${priorityStyles[priorityName]}`}>
-              {priorityName}
-            </span>
-          )}
-        </div>
+      <div className="flex-1 min-w-0 pt-1">
         
         <p className={`text-base sm:text-[17px] font-medium leading-snug whitespace-pre-wrap break-words ${
           program.completed ? 'text-stone-500 line-through decoration-stone-300' : 'text-stone-900'
@@ -791,66 +784,72 @@ const ProgramCard = ({ program }) => {
         )}
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-2 flex-shrink-0 relative">
-        {showOptions && (
-          <>
-            <div 
-              className="fixed inset-0 z-40" 
-              onClick={(e) => { e.stopPropagation(); setShowOptions(false); }}
-              onPointerDown={(e) => { e.stopPropagation(); setShowOptions(false); }}
-            />
-            <div className="absolute right-14 top-1/2 -translate-y-1/2 z-50 bg-white rounded-full shadow-lg border border-stone-200 p-1 flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200">
-              {permissions.canEdit && (
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setEditProgram(program); setShowOptions(false); }}
-                  className="p-2 text-stone-500 hover:text-amber-700 hover:bg-amber-50 rounded-full transition-colors"
-                  aria-label="Edit"
-                >
-                  <IconEdit2 size={18} />
-                </button>
+      {/* Actions & Priority */}
+      <div className="flex flex-col items-center justify-start gap-1 flex-shrink-0 relative pt-0.5">
+        {showPriority && (
+          <span className={`text-[8px] font-bold px-1.5 py-[2px] rounded-md border uppercase tracking-wider leading-none ${priorityStyles[priorityName]}`}>
+            {priorityName}
+          </span>
+        )}
+        
+        <div className="relative flex items-center justify-center mt-1">
+          {showOptions && (
+            <>
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={(e) => { e.stopPropagation(); setShowOptions(false); }}
+                onPointerDown={(e) => { e.stopPropagation(); setShowOptions(false); }}
+              />
+              <div className="absolute right-12 top-1/2 -translate-y-1/2 z-50 bg-white rounded-full shadow-lg border border-stone-200 p-1 flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200">
+                {permissions.canEdit && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setEditProgram(program); setShowOptions(false); }}
+                    className="p-2 text-stone-500 hover:text-amber-700 hover:bg-amber-50 rounded-full transition-colors"
+                    aria-label="Edit"
+                  >
+                    <IconEdit2 size={18} />
+                  </button>
+                )}
+                
+                {permissions.canDelete && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleDeleteClick(); setShowOptions(false); }}
+                    className="p-2 text-stone-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                    aria-label="Delete"
+                  >
+                    <IconTrash2 size={18} />
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+          
+          {permissions.canComplete && (
+            <button 
+              onClick={handleToggle}
+              disabled={isUpdating}
+              className={`p-1.5 rounded-full transition-all focus:outline-none ${
+                program.completed 
+                  ? 'text-green-600 hover:bg-green-50' 
+                  : 'text-stone-300 hover:text-stone-500 hover:bg-stone-100'
+              }`}
+            >
+              {isUpdating ? (
+                <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
+              ) : program.completed ? (
+                <IconCheckCircle size={22} className="sm:w-6 sm:h-6" />
+              ) : (
+                <IconCircle size={22} className="sm:w-6 sm:h-6" />
               )}
-              
-              {permissions.canDelete && (
-                <button 
-                  onClick={(e) => { e.stopPropagation(); handleDeleteClick(); setShowOptions(false); }}
-                  className="p-2 text-stone-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                  aria-label="Delete"
-                >
-                  <IconTrash2 size={18} />
-                </button>
-              )}
+            </button>
+          )}
+          
+          {!permissions.canComplete && program.completed && (
+            <div className="p-1.5">
+              <IconCheckCircle size={20} className="text-green-600" />
             </div>
-          </>
-        )}
-        
-        {permissions.canComplete && (
-          <button 
-            onClick={handleToggle}
-            disabled={isUpdating}
-            className={`p-2 rounded-full transition-all focus:outline-none ${
-              program.completed 
-                ? 'text-green-600 hover:bg-green-50' 
-                : 'text-stone-300 hover:text-stone-500 hover:bg-stone-100'
-            }`}
-          >
-            {isUpdating ? (
-              <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
-            ) : program.completed ? (
-              <IconCheckCircle size={24} className="sm:w-7 sm:h-7" />
-            ) : (
-              <IconCircle size={24} className="sm:w-7 sm:h-7" />
-            )}
-          </button>
-        )}
-        
-        {!permissions.canComplete && program.completed && (
-          <div className="p-2">
-            <IconCheckCircle size={20} className="text-green-600" />
-          </div>
-        )}
-
-
+          )}
+        </div>
       </div>
     </div>
   );
