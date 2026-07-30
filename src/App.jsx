@@ -127,8 +127,8 @@ const LoginCover = () => {
     <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-6 print:hidden">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border border-stone-200">
         <div className="bg-[#4a3b32] p-10 text-center text-stone-50">
-          <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm border border-white/20 shadow-inner">
-            <IconCalendar size={32} className="text-amber-100" />
+          <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner overflow-hidden border-4 border-white/20">
+            <img src="/minister.png" alt="Minister" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-white">Minister Schedule</h1>
           <p className="text-amber-100 mt-2 text-sm font-medium">KM Shaji</p>
@@ -980,8 +980,8 @@ const MainApp = () => {
             
             {/* Identity (Left) */}
             <div className="flex items-center gap-3 hidden md:flex">
-              <div className="w-9 h-9 bg-[#4a3b32] rounded-lg flex items-center justify-center shadow-inner">
-                <IconBookOpen size={18} className="text-amber-100" />
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-inner overflow-hidden border-2 border-[#4a3b32]/20">
+                <img src="/minister.png" alt="Minister" className="w-full h-full object-cover" />
               </div>
               <div className="leading-tight">
                 <h1 className="font-semibold text-sm text-stone-900 tracking-tight">KM Shaji</h1>
