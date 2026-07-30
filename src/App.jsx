@@ -1031,10 +1031,6 @@ const MainApp = () => {
         createdAt: Date.now()
       };
       const docRef = await addDoc(collection(db, 'programs'), newDoc);
-      setProgramsCache(prev => ({
-        ...prev,
-        [dateStr]: [...(prev[dateStr] || []), { id: docRef.id, ...newDoc }]
-      }));
       closeModal('#add', setIsAddOpen);
     } catch (e) {
       console.error(e);
@@ -1047,10 +1043,6 @@ const MainApp = () => {
     setIsSaving(true);
     try {
       await updateDoc(doc(db, 'programs', editProgram.id), data);
-      setProgramsCache(prev => ({
-        ...prev,
-        [dateStr]: prev[dateStr].map(p => p.id === editProgram.id ? { ...p, ...data } : p)
-      }));
       closeModal('#edit', setEditProgram);
     } catch (e) {
       console.error(e);
@@ -1062,10 +1054,6 @@ const MainApp = () => {
   const deleteProgram = async (id) => {
     try {
       await deleteDoc(doc(db, 'programs', id));
-      setProgramsCache(prev => ({
-        ...prev,
-        [dateStr]: prev[dateStr].filter(p => p.id !== id)
-      }));
     } catch (e) {
       console.error(e);
     }
@@ -1074,10 +1062,6 @@ const MainApp = () => {
   const toggleCompletion = async (id, status) => {
     try {
       await updateDoc(doc(db, 'programs', id), { completed: !status });
-      setProgramsCache(prev => ({
-        ...prev,
-        [dateStr]: prev[dateStr].map(p => p.id === id ? { ...p, completed: !status } : p)
-      }));
     } catch (e) {
       console.error(e);
     }
