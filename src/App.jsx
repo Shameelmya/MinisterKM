@@ -882,6 +882,7 @@ const MainApp = () => {
   const [isExporting, setIsExporting] = useState(false);
   const recognitionRef = useRef(null);
   const transcriptRef = useRef('');
+  const isPointerDownRef = useRef(false);
   
   const [printConfig, setPrintConfig] = useState({ timeFilter: 'all', priorityFilter: 'all', viewMode: 'schedule' });
 
@@ -1129,9 +1130,17 @@ const MainApp = () => {
       
       recognition.onend = () => {
         setIsListening(false);
-        const finalTranscript = transcriptRef.current.trim();
-        if (finalTranscript !== '') {
-          processVoiceWithGemini(finalTranscript);
+        if (!isPointerDownRef.current) {
+          const finalTranscript = transcriptRef.current.trim();
+          if (finalTranscript !== '') {
+            processVoiceWithGemini(finalTranscript);
+          }
+          transcriptRef.current = '';
+        } else {
+          // Browser stopped prematurely while holding. Try to restart it.
+          try {
+            recognitionRef.current.start();
+          } catch (e) {}
         }
       };
       
@@ -1146,6 +1155,7 @@ const MainApp = () => {
     }
 
     try {
+      isPointerDownRef.current = true;
       transcriptRef.current = '';
       recognitionRef.current.start();
     } catch (err) {
@@ -1155,10 +1165,22 @@ const MainApp = () => {
 
   const handlePointerUp = (e) => {
     e.preventDefault();
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (err) {}
+    isPointerDownRef.current = false;
+    
+    // If it's no longer listening (e.g. stopped prematurely and failed to restart), process immediately
+    if (!isListening) {
+      const finalTranscript = transcriptRef.current.trim();
+      if (finalTranscript !== '') {
+        processVoiceWithGemini(finalTranscript);
+      }
+      transcriptRef.current = '';
+    } else {
+      // Still listening, stop it (this will trigger onend, which will then process)
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (err) {}
+      }
     }
   };
 
