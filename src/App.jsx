@@ -662,7 +662,7 @@ const ProgramCard = ({ program }) => {
         if (window.navigator && window.navigator.vibrate) {
           window.navigator.vibrate(50);
         }
-      }, 1000);
+      }, 500);
     }
   };
 
@@ -800,24 +800,24 @@ const ProgramCard = ({ program }) => {
               onClick={(e) => { e.stopPropagation(); setShowOptions(false); }}
               onPointerDown={(e) => { e.stopPropagation(); setShowOptions(false); }}
             />
-            <div className="absolute right-12 top-1/2 -translate-y-1/2 z-50 bg-white rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-stone-200 py-1.5 flex flex-col w-32 animate-in fade-in zoom-in-95 duration-200">
+            <div className="absolute right-14 top-1/2 -translate-y-1/2 z-50 bg-white rounded-full shadow-lg border border-stone-200 p-1 flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200">
               {permissions.canEdit && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); setEditProgram(program); setShowOptions(false); }}
-                  className="flex items-center gap-3 px-4 py-2.5 text-stone-700 hover:bg-stone-50 w-full text-left transition-colors"
+                  className="p-2 text-stone-500 hover:text-amber-700 hover:bg-amber-50 rounded-full transition-colors"
+                  aria-label="Edit"
                 >
-                  <IconEdit2 size={16} className="text-amber-600" />
-                  <span className="font-medium text-[15px]">Edit</span>
+                  <IconEdit2 size={18} />
                 </button>
               )}
               
               {permissions.canDelete && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); handleDeleteClick(); setShowOptions(false); }}
-                  className="flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 w-full text-left transition-colors border-t border-stone-100"
+                  className="p-2 text-stone-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                  aria-label="Delete"
                 >
-                  <IconTrash2 size={16} className="text-red-500" />
-                  <span className="font-medium text-[15px]">Delete</span>
+                  <IconTrash2 size={18} />
                 </button>
               )}
             </div>
