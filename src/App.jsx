@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext, useMemo } from 'react';
+import React, { useState, useEffect, createContext, useContext, useMemo, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, initializeFirestore, persistentLocalCache, collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore';
 
@@ -852,6 +852,7 @@ const MainApp = () => {
   const [isListening, setIsListening] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [voicePrefill, setVoicePrefill] = useState(null);
+  const recognitionRef = useRef(null);
   
   const [printConfig, setPrintConfig] = useState({ timeFilter: 'all', priorityFilter: 'all', viewMode: 'schedule' });
 
@@ -1063,35 +1064,52 @@ const MainApp = () => {
     }, 100);
   };
 
-  const handleVoiceInput = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Your browser does not support voice input. Please use Google Chrome or Safari.");
-      return;
-    }
+  const handlePointerDown = (e) => {
+    e.preventDefault();
+    if (isProcessingVoice) return;
     
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'ml-IN'; 
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    
-    recognition.onstart = () => setIsListening(true);
-    
-    recognition.onresult = (event) => {
-      setIsListening(false);
-      const transcript = event.results[0][0].transcript;
-      processVoiceWithGemini(transcript);
-    };
-    
-    recognition.onerror = (event) => {
-      setIsListening(false);
-      console.error("Speech recognition error:", event.error);
-      if (event.error !== 'no-speech') {
-        alert("Voice recognition error: " + event.error);
+    if (!recognitionRef.current) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert("Your browser does not support voice input. Please use Google Chrome or Safari.");
+        return;
       }
-    };
-    
-    recognition.start();
+      
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'ml-IN'; 
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      
+      recognition.onstart = () => setIsListening(true);
+      
+      recognition.onresult = (event) => {
+        setIsListening(false);
+        const transcript = event.results[0][0].transcript;
+        processVoiceWithGemini(transcript);
+      };
+      
+      recognition.onerror = (event) => {
+        setIsListening(false);
+        console.error("Speech recognition error:", event.error);
+      };
+      
+      recognitionRef.current = recognition;
+    }
+
+    try {
+      recognitionRef.current.start();
+    } catch (err) {
+      // already started
+    }
+  };
+
+  const handlePointerUp = (e) => {
+    e.preventDefault();
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (err) {}
+    }
   };
 
   const processVoiceWithGemini = async (transcript) => {
@@ -1279,18 +1297,29 @@ User said: "${transcript}"`
         {/* Floating Action Buttons */}
         {permissions.canAdd && (
           <div className="fixed bottom-20 sm:bottom-8 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 z-40 print:hidden flex flex-col sm:flex-row gap-3">
-            <button 
-              onClick={handleVoiceInput}
-              disabled={isListening || isProcessingVoice}
-              className={`flex items-center justify-center gap-2 text-white shadow-lg shadow-amber-600/30 hover:shadow-xl hover:-translate-y-1 transition-all w-14 h-14 sm:w-auto sm:h-12 sm:px-6 rounded-full ${isListening ? 'bg-red-500 animate-pulse' : isProcessingVoice ? 'bg-amber-400' : 'bg-amber-500 hover:bg-amber-600'}`}
-            >
-              {isProcessingVoice ? (
-                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <IconMic size={24} className="sm:w-5 sm:h-5" />
+            <div className="relative flex items-center justify-center">
+              {isListening && (
+                <>
+                  <div className="absolute w-20 h-20 bg-red-500 rounded-full animate-ping opacity-30"></div>
+                  <div className="absolute w-16 h-16 bg-red-400 rounded-full animate-pulse opacity-50"></div>
+                </>
               )}
-              <span className="hidden sm:inline font-medium">{isListening ? 'Listening...' : isProcessingVoice ? 'Thinking...' : 'Voice Entry'}</span>
-            </button>
+              <button 
+                onPointerDown={handlePointerDown}
+                onPointerUp={handlePointerUp}
+                onPointerLeave={handlePointerUp}
+                disabled={isProcessingVoice}
+                style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
+                className={`relative z-10 flex items-center justify-center gap-2 text-white shadow-lg shadow-red-600/30 transition-all w-14 h-14 sm:w-auto sm:h-12 sm:px-6 rounded-full select-none ${isListening ? 'bg-red-600 scale-110' : isProcessingVoice ? 'bg-amber-400' : 'bg-red-600 hover:bg-red-700 hover:-translate-y-1'}`}
+              >
+                {isProcessingVoice ? (
+                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <IconMic size={24} className="sm:w-5 sm:h-5" />
+                )}
+                <span className="hidden sm:inline font-medium">{isListening ? 'Listening...' : isProcessingVoice ? 'Thinking...' : 'Hold to Speak'}</span>
+              </button>
+            </div>
             <button 
               onClick={() => { setVoicePrefill(null); openModal('#add', setIsAddOpen); }}
               className="flex items-center justify-center gap-2 bg-[#4a3b32] text-white shadow-lg shadow-[#4a3b32]/30 hover:shadow-xl hover:-translate-y-1 hover:bg-[#3a2e26] transition-all w-14 h-14 sm:w-auto sm:h-12 sm:px-6 rounded-full"
