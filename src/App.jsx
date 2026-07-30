@@ -1225,11 +1225,11 @@ User said: "${transcript}"`
           <div className="max-w-4xl mx-auto px-4 h-[72px] flex items-center justify-between gap-2">
             
             {/* Identity (Left) */}
-            <div className="flex items-center gap-3 hidden md:flex">
+            <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-inner overflow-hidden border-2 border-[#4a3b32]/20">
                 <img src="/minister.png" alt="Minister" className="w-full h-full object-cover" />
               </div>
-              <div className="leading-tight">
+              <div className="leading-tight hidden md:block">
                 <h1 className="font-semibold text-sm text-stone-900 tracking-tight">Minister's Day</h1>
                 <p className="text-[10px] text-stone-500 font-medium">KM Shaji - LSGD</p>
               </div>
@@ -1312,7 +1312,12 @@ User said: "${transcript}"`
         <main className="flex-1 max-w-3xl w-full mx-auto px-4 pt-6 sm:pt-8 print:hidden">
           
           {/* Controls Bar */}
-          <div className="flex justify-end mb-4 h-10">
+          <div className="flex justify-between items-center mb-4 h-10">
+            <div className="flex items-center h-6 px-3 bg-white border border-stone-200 rounded-full shadow-sm text-[10px] font-medium text-stone-500">
+              {displayPrograms.length} {viewMode === 'schedule' ? 'Programmes' : 'To-Dos'}
+              {displayPrograms.length > 0 && <span className="ml-1 text-stone-400">({displayPrograms.filter(p => p.completed).length} completed)</span>}
+            </div>
+
             {permissions.canViewPriority && displayPrograms.length > 0 && viewMode === 'schedule' && (
               <button
                 onClick={() => setSortBy(prev => prev === 'time' ? 'priority' : 'time')}
