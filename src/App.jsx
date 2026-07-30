@@ -104,6 +104,23 @@ const LoginCover = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash !== '#login' && selectedRole) {
+        setSelectedRole(null);
+        setError('');
+        setPassword('');
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [selectedRole]);
+
+  const selectRole = (role) => {
+    setSelectedRole(role);
+    window.location.hash = 'login';
+  };
+
   const handleLogin = (e) => {
     e.preventDefault();
     setError('');
@@ -147,13 +164,13 @@ const LoginCover = () => {
               <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-6 text-center">Select Role</h2>
               <div className="grid grid-cols-2 gap-4">
                 <button
-                  onClick={() => setSelectedRole(ROLES.PS_EDIT)}
+                  onClick={() => selectRole(ROLES.PS_EDIT)}
                   className="w-full py-4 px-2 text-center rounded-2xl bg-[#4a3b32] hover:bg-[#3a2e26] text-white transition-all font-bold text-sm tracking-wide shadow-lg shadow-[#4a3b32]/30 hover:-translate-y-0.5 active:translate-y-0"
                 >
                   Admin
                 </button>
                 <button
-                  onClick={() => setSelectedRole(ROLES.PS_VIEW)}
+                  onClick={() => selectRole(ROLES.PS_VIEW)}
                   className="w-full py-4 px-2 text-center rounded-2xl bg-white hover:bg-stone-50 text-stone-700 border-2 border-stone-200 transition-all font-bold text-sm tracking-wide shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0"
                 >
                   View Only
@@ -165,7 +182,7 @@ const LoginCover = () => {
               <div className="flex items-center text-sm font-medium text-stone-500 mb-2">
                 <button 
                   type="button" 
-                  onClick={() => { setSelectedRole(null); setPassword(''); setError(''); }}
+                  onClick={() => window.history.back()}
                   className="flex items-center hover:text-stone-800 transition-colors"
                 >
                   <IconChevronLeft size={16} className="mr-1" /> Back
@@ -836,6 +853,29 @@ const MainApp = () => {
 
   const permissions = useMemo(() => getPermissions(user.role), [user.role]);
   const dateStr = currentDate.toISOString().split('T')[0];
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash !== '#add' && isAddOpen) setIsAddOpen(false);
+      if (hash !== '#edit' && editProgram) setEditProgram(null);
+      if (hash !== '#calendar' && isCalendarOpen) setIsCalendarOpen(false);
+      if (hash !== '#export' && isPrintOpen) setIsPrintOpen(false);
+      if (hash !== '#logout' && isLogoutConfirmOpen) setIsLogoutConfirmOpen(false);
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [isAddOpen, editProgram, isCalendarOpen, isPrintOpen, isLogoutConfirmOpen]);
+
+  const openModal = (hash, setter, value = true) => {
+    setter(value);
+    window.location.hash = hash;
+  };
+
+  const closeModal = (hash, setter) => {
+    if (window.location.hash === hash) window.history.back();
+    else setter(false);
+  };
   const programs = programsCache[dateStr] || [];
 
   const fetchPrograms = async (dateKey, forceRefresh = false) => {
@@ -964,7 +1004,7 @@ const MainApp = () => {
         ...prev,
         [dateStr]: [...(prev[dateStr] || []), { id: docRef.id, ...newDoc }]
       }));
-      setIsAddOpen(false);
+      closeModal('#add', setIsAddOpen);
     } catch (e) {
       console.error(e);
     } finally {
@@ -980,7 +1020,7 @@ const MainApp = () => {
         ...prev,
         [dateStr]: prev[dateStr].map(p => p.id === editProgram.id ? { ...p, ...data } : p)
       }));
-      setEditProgram(null);
+      closeModal('#edit', setEditProgram);
     } catch (e) {
       console.error(e);
     } finally {
@@ -1052,7 +1092,7 @@ const MainApp = () => {
                   <IconChevronLeft size={20} />
                 </button>
                 <button 
-                  onClick={() => setIsCalendarOpen(true)}
+                  onClick={() => openModal('#calendar', setIsCalendarOpen)}
                   className="flex flex-col items-center group px-2"
                 >
                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest group-hover:text-[#4a3b32] transition-colors">
@@ -1097,7 +1137,7 @@ const MainApp = () => {
                 <IconRefresh size={18} />
               </button>
               <button 
-                onClick={() => setIsPrintOpen(true)}
+                onClick={() => openModal('#export', setIsPrintOpen)}
                 className="p-2 flex items-center gap-2 text-[#7a6b63] hover:text-[#3a2e26] hover:bg-[#eae6e1] rounded-lg transition-colors text-sm font-medium"
                 title="Print Schedule"
               >
@@ -1106,7 +1146,7 @@ const MainApp = () => {
               </button>
               <div className="w-px h-5 bg-[#d6cfc7] mx-1 hidden sm:block"></div>
               <button 
-                onClick={() => setIsLogoutConfirmOpen(true)}
+                onClick={() => openModal('#logout', setIsLogoutConfirmOpen)}
                 className="p-2 text-[#7a6b63] hover:text-[#3a2e26] hover:bg-[#eae6e1] rounded-lg transition-colors"
                 title="Logout"
               >
@@ -1159,7 +1199,7 @@ const MainApp = () => {
         {permissions.canAdd && (
           <div className="fixed bottom-20 sm:bottom-8 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 z-40 print:hidden">
             <button 
-              onClick={() => setIsAddOpen(true)}
+              onClick={() => openModal('#add', setIsAddOpen)}
               className="flex items-center justify-center gap-2 bg-[#4a3b32] text-white shadow-lg shadow-[#4a3b32]/30 hover:shadow-xl hover:-translate-y-1 hover:bg-[#3a2e26] transition-all w-14 h-14 sm:w-auto sm:h-12 sm:px-6 rounded-full"
             >
               <IconPlus size={24} className="sm:w-5 sm:h-5" />
@@ -1179,11 +1219,11 @@ const MainApp = () => {
               <IconCheckCircle size={20} className="mb-1" />
               <span className="text-[10px] font-semibold">To-Do</span>
             </button>
-            <button onClick={() => setIsCalendarOpen(true)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26]">
+            <button onClick={() => openModal('#calendar', setIsCalendarOpen)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26]">
               <IconCalendar size={20} className="mb-1" />
               <span className="text-[10px] font-medium">Calendar</span>
             </button>
-            <button onClick={() => setIsLogoutConfirmOpen(true)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26]">
+            <button onClick={() => openModal('#logout', setIsLogoutConfirmOpen)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26]">
               <IconUser size={20} className="mb-1" />
               <span className="text-[10px] font-medium">Exit</span>
             </button>
@@ -1191,16 +1231,16 @@ const MainApp = () => {
         </nav>
 
         {/* Modals */}
-        <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="New Entry">
-          <ProgramForm onSubmit={handleAdd} onCancel={() => setIsAddOpen(false)} isSaving={isSaving} />
+        <Modal isOpen={isAddOpen} onClose={() => closeModal('#add', setIsAddOpen)} title="New Entry">
+          <ProgramForm onSubmit={handleAdd} onCancel={() => closeModal('#add', setIsAddOpen)} isSaving={isSaving} />
         </Modal>
 
-        <Modal isOpen={!!editProgram} onClose={() => setEditProgram(null)} title="Edit Entry">
+        <Modal isOpen={!!editProgram} onClose={() => closeModal('#edit', setEditProgram)} title="Edit Entry">
           {editProgram && (
             <ProgramForm 
               initialData={editProgram} 
               onSubmit={handleEdit} 
-              onCancel={() => setEditProgram(null)} 
+              onCancel={() => closeModal('#edit', setEditProgram)} 
               isSaving={isSaving} 
             />
           )}
@@ -1208,7 +1248,7 @@ const MainApp = () => {
 
         <PrintModal 
           isOpen={isPrintOpen} 
-          onClose={() => setIsPrintOpen(false)}
+          onClose={() => closeModal('#export', setIsPrintOpen)}
           onPrint={handlePrintTrigger}
           canViewPriority={permissions.canViewPriority}
           viewMode={viewMode}
@@ -1216,12 +1256,12 @@ const MainApp = () => {
 
         <CalendarModal 
           isOpen={isCalendarOpen} 
-          onClose={() => setIsCalendarOpen(false)} 
+          onClose={() => closeModal('#calendar', setIsCalendarOpen)} 
           selectedDate={currentDate} 
           onSelectDate={setCurrentDate} 
         />
 
-        <Modal isOpen={isLogoutConfirmOpen} onClose={() => setIsLogoutConfirmOpen(false)} title="Confirm Logout">
+        <Modal isOpen={isLogoutConfirmOpen} onClose={() => closeModal('#logout', setIsLogoutConfirmOpen)} title="Confirm Logout">
           <div className="text-center py-4">
             <div className="w-16 h-16 bg-[#eae6e1] rounded-full flex items-center justify-center mx-auto mb-4 text-[#4a3b32]">
               <IconLogOut size={28} />
@@ -1231,7 +1271,7 @@ const MainApp = () => {
             
             <div className="flex gap-3">
               <button 
-                onClick={() => setIsLogoutConfirmOpen(false)}
+                onClick={() => closeModal('#logout', setIsLogoutConfirmOpen)}
                 className="flex-1 py-3 bg-[#eae6e1] text-[#4a3b32] rounded-xl font-medium hover:bg-[#dcd7d1] transition-colors"
               >
                 Cancel
