@@ -1104,15 +1104,15 @@ const MainApp = () => {
       recognition.maxAlternatives = 1;
       
       recognition.onstart = () => setIsListening(true);
+      recognition.onend = () => setIsListening(false);
       
       recognition.onresult = (event) => {
-        setIsListening(false);
-        const transcript = event.results[0][0].transcript;
+        const transcript = event.results[0]?.[0]?.transcript;
+        if (!transcript || transcript.trim() === '') return;
         processVoiceWithGemini(transcript);
       };
       
       recognition.onerror = (event) => {
-        setIsListening(false);
         console.error("Speech recognition error:", event.error);
       };
       
@@ -1164,9 +1164,15 @@ User said: "${transcript}"`
         })
       });
       
-      if (!response.ok) throw new Error("API request failed");
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`API failed: ${response.status} ${errText}`);
+      }
       
       const data = await response.json();
+      if (!data.candidates || data.candidates.length === 0) {
+        throw new Error("No response from AI.");
+      }
       let jsonStr = data.candidates[0].content.parts[0].text;
       jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
       
@@ -1175,7 +1181,7 @@ User said: "${transcript}"`
       openModal('#add', setIsAddOpen);
     } catch (error) {
       console.error(error);
-      alert("Failed to process voice input. Please try typing instead.");
+      alert("Voice Error: " + error.message + "\nPlease try speaking clearly or type instead.");
     } finally {
       setIsProcessingVoice(false);
     }
@@ -1323,8 +1329,9 @@ User said: "${transcript}"`
             <div className="relative flex items-center justify-center">
               {isListening && (
                 <>
-                  <div className="absolute w-20 h-20 bg-red-500 rounded-full animate-ping opacity-30"></div>
-                  <div className="absolute w-16 h-16 bg-red-400 rounded-full animate-pulse opacity-50"></div>
+                  <div className="absolute w-14 h-14 bg-red-500 rounded-full animate-ripple opacity-60"></div>
+                  <div className="absolute w-14 h-14 bg-red-500 rounded-full animate-ripple opacity-60" style={{ animationDelay: '0.6s' }}></div>
+                  <div className="absolute w-14 h-14 bg-red-500 rounded-full animate-ripple opacity-60" style={{ animationDelay: '1.2s' }}></div>
                 </>
               )}
               <button 
