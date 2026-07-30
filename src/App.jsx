@@ -1517,9 +1517,9 @@ User said: "${transcript}"`
                       return (
                         <tr key={p.id} className="page-break-inside-avoid">
                           {printConfig.viewMode === 'schedule' && (
-                            <td className="pt-3 pb-5 px-4 font-bold text-base text-black border border-black align-middle text-center whitespace-nowrap">{displayTime}</td>
+                            <td className="pt-3 pb-5 px-4 font-bold text-lg text-black border border-black align-middle text-center whitespace-nowrap">{displayTime}</td>
                           )}
-                          <td className="pt-3 pb-5 px-4 align-middle text-center text-base border border-black text-black">
+                          <td className="pt-3 pb-5 px-4 align-middle text-center text-lg border border-black text-black">
                             {p.completed && (
                               <div className="mb-1.5">
                                 <span className="text-[9px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Completed</span>
