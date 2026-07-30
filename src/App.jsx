@@ -130,26 +130,35 @@ const LoginCover = () => {
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-6 print:hidden">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border border-stone-200">
-        <div className="bg-[#4a3b32] pt-16 pb-12 px-10 text-center text-stone-50">
-          <div className="w-32 h-32 rounded-full flex items-center justify-center mx-auto shadow-[0_0_40px_rgba(0,0,0,0.3)] overflow-hidden border-[6px] border-white/10">
-            <img src="/minister.png" alt="Minister" className="w-full h-full object-cover" />
+        <div className="bg-[#4a3b32] pt-16 pb-12 px-8 text-center text-stone-50 relative overflow-hidden">
+          <div className="absolute inset-0 bg-black/10"></div>
+          <div className="relative z-10">
+            <div className="w-44 h-44 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden border-[8px] border-white/10">
+              <img src="/minister.png" alt="Minister" className="w-full h-full object-cover" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-white uppercase drop-shadow-md">Minister's Day</h1>
+            <p className="text-amber-100/90 mt-2 text-sm font-semibold tracking-wide">KM Shaji</p>
+            <p className="text-amber-200/70 text-xs mt-1">Hon. LSGD Minister, Keralam</p>
           </div>
         </div>
         
-        <div className="p-6 pb-8">
+        <div className="p-8 pb-10">
           {!selectedRole ? (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-sm font-semibold text-stone-500 uppercase tracking-wider mb-5 text-center">Select Role</h2>
+              <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-6 text-center">Select Role</h2>
               <div className="grid grid-cols-2 gap-4">
-                {Object.entries(roleLabels).map(([role, label]) => (
-                  <button
-                    key={role}
-                    onClick={() => setSelectedRole(role)}
-                    className="w-full py-4 px-2 text-center rounded-xl border border-stone-200 hover:border-amber-700 hover:bg-stone-50 transition-all font-medium text-stone-800 flex justify-center items-center group shadow-sm hover:shadow-md"
-                  >
-                    {label}
-                  </button>
-                ))}
+                <button
+                  onClick={() => setSelectedRole(ROLES.PS_EDIT)}
+                  className="w-full py-4 px-2 text-center rounded-2xl bg-[#4a3b32] hover:bg-[#3a2e26] text-white transition-all font-bold text-sm tracking-wide shadow-lg shadow-[#4a3b32]/30 hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  Admin
+                </button>
+                <button
+                  onClick={() => setSelectedRole(ROLES.PS_VIEW)}
+                  className="w-full py-4 px-2 text-center rounded-2xl bg-white hover:bg-stone-50 text-stone-700 border-2 border-stone-200 transition-all font-bold text-sm tracking-wide shadow-sm hover:shadow hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  View Only
+                </button>
               </div>
             </div>
           ) : (
