@@ -1469,7 +1469,7 @@ User said: "${transcript}"`
               <h1 className="text-3xl font-bold tracking-tight text-stone-900 mb-1.5">KM Shaji</h1>
               <h2 className="text-sm font-bold text-stone-600 uppercase tracking-widest mb-4">Hon LSG Department Minister</h2>
               
-              <h3 className="text-base font-bold text-stone-800">
+              <h3 className="text-lg font-bold text-stone-900 bg-stone-100 px-5 py-2.5 rounded-lg border border-stone-200">
                 {printConfig.viewMode === 'todo' ? 'To-Do List' : 'Programme Schedule'} • {formatDate(currentDate)}
               </h3>
               
@@ -1484,14 +1484,14 @@ User said: "${transcript}"`
             </div>
 
             {/* Table Container */}
-            <div className="mb-8 overflow-hidden rounded-xl border border-stone-300">
-              <table className="w-full text-center border-collapse bg-white">
+            <div className="mb-8">
+              <table className="w-full text-center border-collapse bg-white border border-black">
                 <thead className="bg-[#4a3b32] text-white">
                   <tr>
                     {printConfig.viewMode === 'schedule' && (
-                      <th className="p-3 font-bold text-[11px] uppercase tracking-widest border border-stone-300 w-24 align-middle">Time</th>
+                      <th className="p-3 font-bold text-[11px] uppercase tracking-widest border border-black w-24 align-middle">Time</th>
                     )}
-                    <th className="p-3 font-bold text-[11px] uppercase tracking-widest border border-stone-300 align-middle">
+                    <th className="p-3 font-bold text-[11px] uppercase tracking-widest border border-black align-middle">
                       {printConfig.viewMode === 'schedule' ? 'Programme' : 'Description'}
                     </th>
                   </tr>
@@ -1499,7 +1499,7 @@ User said: "${transcript}"`
                 <tbody className="bg-white">
                   {printPrograms.length === 0 ? (
                     <tr>
-                      <td colSpan={printConfig.viewMode === 'schedule' ? "2" : "1"} className="p-8 text-center text-stone-500 font-medium border border-stone-300">
+                      <td colSpan={printConfig.viewMode === 'schedule' ? "2" : "1"} className="p-8 text-center text-stone-500 font-medium border border-black">
                         No entries scheduled for this day.
                       </td>
                     </tr>
@@ -1517,9 +1517,9 @@ User said: "${transcript}"`
                       return (
                         <tr key={p.id} className="page-break-inside-avoid">
                           {printConfig.viewMode === 'schedule' && (
-                            <td className="pt-3 pb-5 px-4 font-bold text-sm text-stone-800 border border-stone-300 align-middle text-center whitespace-nowrap">{displayTime}</td>
+                            <td className="pt-3 pb-5 px-4 font-bold text-base text-black border border-black align-middle text-center whitespace-nowrap">{displayTime}</td>
                           )}
-                          <td className="pt-3 pb-5 px-4 align-middle text-center text-sm border border-stone-300 text-stone-800">
+                          <td className="pt-3 pb-5 px-4 align-middle text-center text-base border border-black text-black">
                             {p.completed && (
                               <div className="mb-1.5">
                                 <span className="text-[9px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Completed</span>
