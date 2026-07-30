@@ -243,8 +243,8 @@ const Modal = ({ isOpen, onClose, title, children }) => {
 const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
   const [entryMode, setEntryMode] = useState(initialData?.type || 'schedule');
   
-  let initialHour = '';
-  let initialMin = '';
+  let initialHour = '00';
+  let initialMin = '00';
   let initialAmPm = 'AM';
 
   if (initialData?.time) {
@@ -252,7 +252,11 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
     let h = parseInt(hStr, 10);
     initialAmPm = h >= 12 ? 'PM' : 'AM';
     h = h % 12 || 12;
-    initialHour = h.toString();
+    if (h === 12 && initialAmPm === 'AM') {
+      initialHour = '00';
+    } else {
+      initialHour = h < 10 ? `0${h}` : `${h}`;
+    }
     initialMin = mStr;
   }
 
@@ -286,7 +290,7 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
     });
   };
 
-  const hours = Array.from({length: 12}, (_, i) => (i + 1).toString());
+  const hours = ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
   const minutes = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
 
   return (
