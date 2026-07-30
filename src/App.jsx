@@ -652,6 +652,23 @@ const PrintModal = ({ isOpen, onClose, onPrint, canViewPriority, viewMode, isExp
 const ProgramCard = ({ program }) => {
   const { permissions, deleteProgram, toggleCompletion, setEditProgram } = useContext(AppContext);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const timerRef = useRef(null);
+
+  const handlePointerDown = () => {
+    if (!showOptions) {
+      timerRef.current = setTimeout(() => {
+        setShowOptions(true);
+        if (window.navigator && window.navigator.vibrate) {
+          window.navigator.vibrate(50);
+        }
+      }, 1000);
+    }
+  };
+
+  const handlePointerUp = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  };
 
   const handleToggle = async () => {
     if (!permissions.canComplete) return;
@@ -687,11 +704,18 @@ const ProgramCard = ({ program }) => {
   const isTodo = program.type === 'todo';
 
   return (
-    <div className={`group bg-white rounded-2xl p-4 sm:p-5 shadow-sm border transition-all duration-300 flex items-start gap-4 relative overflow-hidden ${
-      program.completed 
-        ? 'border-stone-100 bg-stone-50/50' 
-        : 'border-stone-200 hover:shadow-md hover:border-stone-300'
-    }`}>
+    <div 
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
+      className={`group bg-white rounded-2xl p-4 sm:p-5 shadow-sm border transition-all duration-300 flex items-start gap-4 relative overflow-hidden ${
+        program.completed 
+          ? 'border-stone-100 bg-stone-50/50' 
+          : 'border-stone-200 hover:shadow-md hover:border-stone-300'
+      }`}
+    >
       
       {/* Priority Indicator strip on the left */}
       {permissions.canViewPriority && (
@@ -768,21 +792,21 @@ const ProgramCard = ({ program }) => {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-        {(permissions.canEdit) && (
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {showOptions && permissions.canEdit && (
           <button 
-            onClick={() => setEditProgram(program)}
-            className="p-2 text-stone-400 hover:text-amber-700 hover:bg-amber-50 rounded-full transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 sm:flex hidden"
+            onClick={(e) => { e.stopPropagation(); setEditProgram(program); setShowOptions(false); }}
+            className="p-2.5 sm:p-2 text-stone-500 hover:text-amber-700 hover:bg-amber-50 rounded-full transition-colors"
             aria-label="Edit"
           >
             <IconEdit2 size={18} />
           </button>
         )}
         
-        {permissions.canDelete && (
+        {showOptions && permissions.canDelete && (
           <button 
-            onClick={handleDeleteClick}
-            className="p-2 rounded-full text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 sm:flex hidden items-center"
+            onClick={(e) => { e.stopPropagation(); handleDeleteClick(); setShowOptions(false); }}
+            className="p-2.5 sm:p-2 rounded-full text-stone-500 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center"
             aria-label="Delete"
           >
             <IconTrash2 size={18} />
@@ -1068,6 +1092,8 @@ const MainApp = () => {
         const element = document.getElementById('pdf-export-content');
         if (!element) return;
         
+        element.classList.remove('hidden'); // Ensure it's in the DOM explicitly for html2pdf
+        
         const html2pdf = (await import('html2pdf.js')).default;
         
         const opt = {
@@ -1079,6 +1105,8 @@ const MainApp = () => {
         };
         
         await html2pdf().from(element).set(opt).save();
+        
+        element.classList.add('hidden'); // Hide it again
       } catch (err) {
         console.error("PDF Export failed:", err);
       } finally {
@@ -1144,7 +1172,7 @@ const MainApp = () => {
         return;
       }
       
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1440,7 +1468,7 @@ User said: "${transcript}"`
         </Modal>
 
         {/* PDF EXPORT CONTENT - HIDDEN FROM SCREEN */}
-        <div className="absolute top-0 left-[-9999px] w-[800px] bg-white text-black p-8 font-sans" id="pdf-export-content">
+        <div className="absolute top-0 left-0 w-[800px] bg-white text-black p-8 font-sans hidden z-[-50]" id="pdf-export-content">
           <div className="mb-8 text-center pb-6 border-b border-gray-300 flex flex-col items-center">
             <h1 className="text-3xl font-extrabold uppercase tracking-widest text-[#2d241f] mb-1">Hon. KM Shaji</h1>
             <h2 className="text-lg font-medium text-stone-600 mb-5 tracking-wider">LSGD Minister, Keralam</h2>
@@ -1530,14 +1558,24 @@ User said: "${transcript}"`
 };
 
 export default function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = sessionStorage.getItem('appUser');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (e) {
+      return null;
+    }
+  });
 
   const login = (role) => {
-    setUser({ id: 'local-user', role });
+    const newUser = { id: 'local-user', role };
+    setUser(newUser);
+    sessionStorage.setItem('appUser', JSON.stringify(newUser));
   };
 
   const logout = () => {
     setUser(null);
+    sessionStorage.removeItem('appUser');
   };
 
   return (
