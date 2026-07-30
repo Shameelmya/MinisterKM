@@ -881,6 +881,7 @@ const MainApp = () => {
   const [voicePrefill, setVoicePrefill] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const recognitionRef = useRef(null);
+  const transcriptRef = useRef('');
   
   const [printConfig, setPrintConfig] = useState({ timeFilter: 'all', priorityFilter: 'all', viewMode: 'schedule' });
 
@@ -1109,26 +1110,43 @@ const MainApp = () => {
       
       const recognition = new SpeechRecognition();
       recognition.lang = 'ml-IN'; 
+      recognition.continuous = true;
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
       
-      recognition.onstart = () => setIsListening(true);
-      recognition.onend = () => setIsListening(false);
+      recognition.onstart = () => {
+        setIsListening(true);
+        transcriptRef.current = '';
+      };
       
       recognition.onresult = (event) => {
-        const transcript = event.results[0]?.[0]?.transcript;
-        if (!transcript || transcript.trim() === '') return;
-        processVoiceWithGemini(transcript);
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            transcriptRef.current += event.results[i][0].transcript + ' ';
+          }
+        }
+      };
+      
+      recognition.onend = () => {
+        setIsListening(false);
+        const finalTranscript = transcriptRef.current.trim();
+        if (finalTranscript !== '') {
+          processVoiceWithGemini(finalTranscript);
+        }
       };
       
       recognition.onerror = (event) => {
         console.error("Speech recognition error:", event.error);
+        if (event.error !== 'aborted') {
+          setIsListening(false);
+        }
       };
       
       recognitionRef.current = recognition;
     }
 
     try {
+      transcriptRef.current = '';
       recognitionRef.current.start();
     } catch (err) {
       // already started
@@ -1160,10 +1178,12 @@ const MainApp = () => {
           contents: [{
             parts: [{
               text: `You are an AI assistant parsing voice commands into JSON for a schedule app.
+The user is speaking naturally, so there may be filler words, hesitations, mistakes, or conversational context. 
+Your job is to ignore the unwanted words and extract ONLY the refined, professional details into a clean diary note.
 Return RAW JSON ONLY, no markdown formatting (\`\`\`json) or comments.
 Fields to output:
 - type: 'schedule' or 'todo'. If user says 'starting to do' or 'todo' or it sounds like a task, set 'todo'. Otherwise 'schedule'.
-- eventName: The name of the program, place, or person (e.g. "കല്യാണം- അഹമ്മദ്ക്ക, കോഴിക്കോട്").
+- eventName: The clean, professional name of the program, place, or person (e.g., instead of "uh I am going to meet the ADGP at", just output "Meeting with ADGP"). Keep it in the language the user spoke (Malayalam or English).
 - contactNumber: The phone number if mentioned, else "".
 - time: The time in 24-hour format "HH:MM" if mentioned (e.g., 11:00 AM -> 11:00, 2:00 PM -> 14:00), else "".
 - date: The date in "YYYY-MM-DD" format if a specific date or day is mentioned (e.g., tomorrow, next saturday, 12th Aug). Today's date is ${new Date().toISOString().split('T')[0]}. If no date is mentioned, return "".
