@@ -249,8 +249,11 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
   const [priority, setPriority] = useState(initialData?.priority || 'medium');
 
   const [isRecording, setIsRecording] = useState(false);
+  const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const isRecordingRef = React.useRef(false);
   const recognitionRef = React.useRef(null);
+  const transcriptRef = React.useRef("");
+  const initialTextRef = React.useRef("");
   
   useEffect(() => {
     return () => {
@@ -259,6 +262,79 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
       }
     };
   }, []);
+
+  const processWithGemini = async (fullTranscript) => {
+    if (!fullTranscript.trim()) return;
+    setIsProcessingVoice(true);
+    try {
+      const payload = {
+        contents: [{
+          parts: [{ 
+            text: `Extract the details from this voice transcript (it could be in Malayalam or English) to create a schedule or to-do entry.
+            Transcript: "${fullTranscript}"
+            Rules:
+            - If the user explicitly mentions "to do" or "task", set type to "todo". Otherwise, default to "schedule".
+            - Extract time if mentioned. Convert to 24-hour HH:MM format (e.g., 2:00 PM becomes 14:00, 9:00 AM becomes 09:00).
+            - eventName should be the main description of the task or program (in the original language). Remove the time/date words if they are cleanly extracted.
+            - Extract contactNumber if a phone number is dictated.
+            - Return strict JSON matching the provided schema.`
+          }]
+        }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              type: { type: "STRING", enum: ["schedule", "todo"] },
+              time: { type: "STRING" },
+              eventName: { type: "STRING" },
+              contactNumber: { type: "STRING" },
+              priority: { type: "STRING", enum: ["high", "medium", "low"] }
+            },
+            required: ["type", "eventName"]
+          }
+        }
+      };
+      
+      // Attempt to use env variable, gracefully fallback
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || ""; 
+      if (!apiKey) {
+        console.warn("Gemini API key not found in environment variables.");
+        return;
+      }
+      
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const result = await response.json();
+      if (result.candidates && result.candidates[0].content) {
+         const jsonText = result.candidates[0].content.parts[0].text;
+         const data = JSON.parse(jsonText);
+         
+         if (data.type) setEntryMode(data.type);
+         if (data.eventName) setEventName(data.eventName);
+         if (data.contactNumber) setContactNumber(data.contactNumber);
+         if (data.priority) setPriority(data.priority);
+         
+         if (data.time && data.time.includes(':')) {
+           const [hStr, mStr] = data.time.split(':');
+           let h = parseInt(hStr, 10);
+           setAmpm(h >= 12 ? 'PM' : 'AM');
+           h = h % 12 || 12;
+           setHour(h.toString());
+           setMinute(mStr);
+         }
+      }
+    } catch (e) {
+      console.error("Failed to process with Gemini:", e);
+    } finally {
+      setIsProcessingVoice(false);
+    }
+  };
 
   const handlePointerDown = (e) => {
     e.preventDefault();
@@ -272,6 +348,8 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
 
     isRecordingRef.current = true;
     setIsRecording(true);
+    initialTextRef.current = eventName; // Remember what was already typed
+    transcriptRef.current = "";
 
     const startRecognition = () => {
       recognitionRef.current = new SpeechRecognition();
@@ -280,15 +358,24 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
       recognitionRef.current.lang = 'ml-IN';
 
       recognitionRef.current.onresult = (event) => {
-        let finalTranscript = '';
+        let interim = '';
+        let finalSegment = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
+            finalSegment += event.results[i][0].transcript;
+          } else {
+            interim += event.results[i][0].transcript;
           }
         }
-        if (finalTranscript) {
-          setEventName(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + finalTranscript);
+        
+        if (finalSegment) {
+          transcriptRef.current += (transcriptRef.current && !transcriptRef.current.endsWith(' ') ? ' ' : '') + finalSegment;
         }
+        
+        // Show real-time combined text
+        const base = initialTextRef.current;
+        const spoken = transcriptRef.current + interim;
+        setEventName(base + (base && spoken && !base.endsWith(' ') ? ' ' : '') + spoken);
       };
 
       recognitionRef.current.onerror = (event) => {
@@ -320,6 +407,11 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
     
     if (recognitionRef.current) {
       recognitionRef.current.stop();
+    }
+    
+    // Once recording stops, if something was said, process the full updated field with Gemini
+    if (transcriptRef.current.trim() || eventName.trim()) {
+      processWithGemini(eventName);
     }
   };
 
@@ -464,10 +556,16 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
               className={`relative z-10 p-3 rounded-full flex items-center justify-center transition-all duration-300 touch-none select-none ${
                 isRecording 
                   ? 'bg-red-500 text-white shadow-lg animate-glow scale-110' 
-                  : 'bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-[#4a3b32]'
+                  : isProcessingVoice 
+                    ? 'bg-amber-500 text-white shadow-md'
+                    : 'bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-[#4a3b32]'
               }`}
             >
-              <IconMic size={20} className={isRecording ? 'animate-pulse' : ''} />
+              {isProcessingVoice ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <IconMic size={20} className={isRecording ? 'animate-pulse' : ''} />
+              )}
             </button>
           </div>
         </div>
