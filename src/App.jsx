@@ -429,9 +429,13 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
 
 const CalendarModal = ({ isOpen, onClose, selectedDate, onSelectDate }) => {
   const [viewDate, setViewDate] = useState(new Date(selectedDate));
+  const [showPicker, setShowPicker] = useState(false);
 
   useEffect(() => {
-    if (isOpen) setViewDate(new Date(selectedDate));
+    if (isOpen) {
+      setViewDate(new Date(selectedDate));
+      setShowPicker(false);
+    }
   }, [isOpen, selectedDate]);
 
   if (!isOpen) return null;
@@ -454,55 +458,99 @@ const CalendarModal = ({ isOpen, onClose, selectedDate, onSelectDate }) => {
   const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
   const monthName = viewDate.toLocaleString('default', { month: 'long' });
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  
+  const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Select Date">
       <div className="flex items-center justify-between mb-6 bg-stone-50 p-2 rounded-xl border border-stone-200">
         <button onClick={prevMonth} className="p-2 text-stone-600 hover:bg-stone-200 rounded-lg transition-colors"><IconChevronLeft size={20}/></button>
-        <span className="font-semibold text-stone-800">{monthName} {year}</span>
+        <button onClick={() => setShowPicker(!showPicker)} className="font-semibold text-stone-800 hover:bg-stone-200 px-4 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+          {monthName} {year}
+        </button>
         <button onClick={nextMonth} className="p-2 text-stone-600 hover:bg-stone-200 rounded-lg transition-colors"><IconChevronRight size={20}/></button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center mb-2">
-        {weekDays.map(day => (
-          <div key={day} className="text-xs font-semibold text-stone-400 uppercase tracking-wider py-1">{day}</div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-7 gap-1">
-        {days.map((d, i) => {
-          if (!d) return <div key={i} className="h-10" />;
-          
-          const isSelected = d.toDateString() === selectedDate.toDateString();
-          const isToday = d.toDateString() === new Date().toDateString();
-
-          return (
-            <button
-              key={i}
-              onClick={() => {
-                onSelectDate(d);
-                onClose();
-              }}
-              className={`h-10 w-full rounded-full flex items-center justify-center text-sm transition-colors ${
-                isSelected ? 'bg-[#4a3b32] text-white font-bold shadow-md' :
-                isToday ? 'bg-amber-100 text-amber-900 font-semibold' :
-                'text-stone-700 hover:bg-stone-100'
-              }`}
+      {showPicker ? (
+        <div className="animate-in fade-in zoom-in-95 duration-200 min-h-[250px] flex flex-col justify-center">
+          <div className="mb-6 flex justify-center">
+            <select 
+              value={year} 
+              onChange={(e) => setViewDate(new Date(parseInt(e.target.value), month, 1))}
+              className="px-4 py-2.5 bg-stone-100 border border-stone-200 rounded-lg font-bold text-stone-800 outline-none text-lg text-center w-32 appearance-none"
             >
-              {d.getDate()}
+              {Array.from({length: 20}, (_, i) => new Date().getFullYear() - 10 + i).map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            {monthsList.map((mName, idx) => (
+              <button
+                key={mName}
+                onClick={() => {
+                  setViewDate(new Date(year, idx, 1));
+                  setShowPicker(false);
+                }}
+                className={`py-3 text-sm rounded-xl font-medium transition-colors ${
+                  idx === month ? 'bg-[#4a3b32] text-white shadow-md' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                }`}
+              >
+                {mName.slice(0,3)}
+              </button>
+            ))}
+          </div>
+          <button 
+            onClick={() => setShowPicker(false)}
+            className="w-full py-2.5 text-stone-500 font-medium hover:bg-stone-100 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <div className="animate-in fade-in duration-200">
+          <div className="grid grid-cols-7 gap-1 text-center mb-2">
+            {weekDays.map(day => (
+              <div key={day} className="text-xs font-semibold text-stone-400 uppercase tracking-wider py-1">{day}</div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1">
+            {days.map((d, i) => {
+              if (!d) return <div key={i} className="h-10" />;
+              
+              const isSelected = d.toDateString() === selectedDate.toDateString();
+              const isToday = d.toDateString() === new Date().toDateString();
+
+              return (
+                <button
+                  key={i}
+                  onClick={() => {
+                    onSelectDate(d);
+                    onClose();
+                  }}
+                  className={`h-10 w-full rounded-full flex items-center justify-center text-sm transition-colors ${
+                    isSelected ? 'bg-[#4a3b32] text-white font-bold shadow-md' :
+                    isToday ? 'bg-amber-100 text-amber-900 font-semibold' :
+                    'text-stone-700 hover:bg-stone-100'
+                  }`}
+                >
+                  {d.getDate()}
+                </button>
+              );
+            })}
+          </div>
+          
+          <div className="mt-6">
+            <button 
+              onClick={() => { onSelectDate(new Date()); onClose(); }}
+              className="w-full py-3 bg-stone-100 text-stone-700 rounded-xl font-medium hover:bg-stone-200 transition-colors"
+            >
+              Go to Today
             </button>
-          );
-        })}
-      </div>
-      
-      <div className="mt-6">
-        <button 
-          onClick={() => { onSelectDate(new Date()); onClose(); }}
-          className="w-full py-3 bg-stone-100 text-stone-700 rounded-xl font-medium hover:bg-stone-200 transition-colors"
-        >
-          Go to Today
-        </button>
-      </div>
+          </div>
+        </div>
+      )}
     </Modal>
   );
 };
