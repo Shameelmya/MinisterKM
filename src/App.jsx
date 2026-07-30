@@ -136,7 +136,7 @@ const LoginCover = () => {
             <div className="w-40 h-40 rounded-full mx-auto mb-3 overflow-hidden bg-transparent">
               <img src="/minister.png" alt="Minister" className="w-full h-full object-cover" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-white drop-shadow-md">Minister's Diary</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-white drop-shadow-md">Minister's Day</h1>
             <p className="text-amber-100/90 mt-1 text-[13px] font-medium tracking-wide">KM Shaji - Hon. LSGD Minister, Keralam</p>
           </div>
         </div>
@@ -784,7 +784,7 @@ const PrintModal = ({ isOpen, onClose, onPrint, canViewPriority, viewMode }) => 
 const ProgramCard = ({ program }) => {
   const { permissions, deleteProgram, toggleCompletion, setEditProgram } = useContext(AppContext);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const { deleteProgram, toggleCompletion } = useContext(ProgramContext);
 
   const handleToggle = async () => {
     if (!permissions.canComplete) return;
@@ -794,12 +794,9 @@ const ProgramCard = ({ program }) => {
   };
 
   const handleDeleteClick = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      setTimeout(() => setConfirmDelete(false), 3000);
-      return;
+    if (window.confirm("Are you sure you want to delete this entry? This action cannot be undone.")) {
+      deleteProgram(program.id);
     }
-    deleteProgram(program.id);
   };
 
   let displayTime = '—';
@@ -918,13 +915,10 @@ const ProgramCard = ({ program }) => {
         {permissions.canDelete && (
           <button 
             onClick={handleDeleteClick}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all sm:flex hidden items-center ${
-              confirmDelete 
-                ? 'bg-red-100 text-red-700 hover:bg-red-200 opacity-100' 
-                : 'text-stone-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100'
-            }`}
+            className="p-2 rounded-full text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 sm:flex hidden items-center"
+            aria-label="Delete"
           >
-            {confirmDelete ? 'Confirm?' : <IconTrash2 size={18} />}
+            <IconTrash2 size={18} />
           </button>
         )}
         
@@ -962,7 +956,7 @@ const ProgramCard = ({ program }) => {
             </button>
           )}
           {permissions.canDelete && (
-             <button onClick={handleDeleteClick} className={`p-2 rounded-full transition-colors ${confirmDelete ? 'text-red-700 bg-red-100' : 'text-stone-400 hover:text-red-600 hover:bg-red-50'}`}>
+             <button onClick={handleDeleteClick} className="p-2 rounded-full text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors">
               <IconTrash2 size={18} />
             </button>
           )}
