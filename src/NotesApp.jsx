@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
 import { db } from './App'; 
 import { Folder as IconFolder, FolderPlus as IconFolderPlus, Search as IconSearch, FileText as IconFileText, Trash2 as IconTrash2, PenTool as IconPenTool, Edit3 as IconEdit3, ChevronDown as IconChevronDown, X as IconX, ChevronRight as IconChevronRight, ArrowLeft as IconArrowLeft } from 'lucide-react';
