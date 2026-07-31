@@ -1,8 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
 import { db } from './App'; 
-import { Folder as IconFolder, FolderPlus as IconFolderPlus, Search as IconSearch, FileText as IconFileText, Trash2 as IconTrash2, PenTool as IconPenTool, Edit3 as IconEdit3, ChevronDown as IconChevronDown } from 'lucide-react';
+import { Folder as IconFolder, FolderPlus as IconFolderPlus, Search as IconSearch, FileText as IconFileText, Trash2 as IconTrash2, PenTool as IconPenTool, Edit3 as IconEdit3, ChevronDown as IconChevronDown, X as IconX } from 'lucide-react';
 import NoteEditor from './NoteEditor';
+
+const Modal = ({ isOpen, onClose, title, children }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 print:hidden">
+      <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      <div className="bg-white w-full sm:w-[480px] rounded-t-3xl sm:rounded-2xl shadow-2xl relative z-10 animate-in slide-in-from-bottom-10 sm:slide-in-from-bottom-4 duration-300 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b border-stone-100">
+          <h3 className="text-lg font-semibold text-stone-800">{title}</h3>
+          <button onClick={onClose} className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-full transition-colors">
+            <IconX size={20} />
+          </button>
+        </div>
+        <div className="p-6 overflow-y-auto">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function NotesApp() {
   const [folders, setFolders] = useState([]);
@@ -14,6 +34,22 @@ export default function NotesApp() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { type, id }
+  
+  const folderFormRef = React.useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (folderFormRef.current && !folderFormRef.current.contains(e.target)) {
+        setIsCreatingFolder(false);
+        setNewFolderName('');
+      }
+    };
+    if (isCreatingFolder) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isCreatingFolder]);
 
   // Fetch Folders
   useEffect(() => {
@@ -50,15 +86,19 @@ export default function NotesApp() {
     }
   };
 
-  const handleDeleteFolder = async (e, folderId) => {
+  const promptDeleteFolder = (e, folderId) => {
     e.stopPropagation();
-    if(!window.confirm("Delete this folder and all notes inside it?")) return;
+    setDeleteConfirm({ type: 'folder', id: folderId });
+  };
+
+  const confirmDeleteFolder = async (folderId) => {
     const folderNotes = notes.filter(n => n.folderId === folderId);
     for (const n of folderNotes) {
       await deleteDoc(doc(db, 'notes', n.id));
     }
     await deleteDoc(doc(db, 'folders', folderId));
     if (activeFolderId === folderId) setActiveFolderId(null);
+    setDeleteConfirm(null);
   };
 
   const handleCreateNote = async (startMode = 'type') => {
@@ -74,6 +114,7 @@ export default function NotesApp() {
     try {
       const docRef = await addDoc(collection(db, 'notes'), newNote);
       setInitialModeForNewNote(startMode);
+      window.history.pushState({ noteOpen: true }, '');
       setActiveNote({ id: docRef.id, ...newNote });
     } catch (error) {
       alert("Error creating note: " + error.message);
@@ -93,15 +134,25 @@ export default function NotesApp() {
     }
   };
 
-  const handleDeleteNote = async (e, noteId) => {
+  const promptDeleteNote = (e, noteId) => {
     e.stopPropagation();
-    if(!window.confirm("Delete this note?")) return;
+    setDeleteConfirm({ type: 'note', id: noteId });
+  };
+
+  const confirmDeleteNote = async (noteId) => {
     try {
       await deleteDoc(doc(db, 'notes', noteId));
       if (activeNote && activeNote.id === noteId) setActiveNote(null);
+      setDeleteConfirm(null);
     } catch (error) {
       alert("Error deleting note: " + error.message);
     }
+  };
+
+  const openExistingNote = (note) => {
+    setInitialModeForNewNote('type'); // Default when opening
+    window.history.pushState({ noteOpen: true }, '');
+    setActiveNote(note);
   };
 
   // Filter notes
@@ -120,7 +171,7 @@ export default function NotesApp() {
         note={activeNote} 
         onSave={handleSaveNote} 
         onBack={() => setActiveNote(null)} 
-        onDelete={(e) => handleDeleteNote(e, activeNote.id)}
+        onDelete={(e) => promptDeleteNote(e, activeNote.id)}
         initialMode={initialModeForNewNote}
       />
     );
@@ -147,7 +198,7 @@ export default function NotesApp() {
         </div>
 
         {isCreatingFolder && (
-          <form onSubmit={handleCreateFolder} className="mb-4 flex gap-2">
+          <form ref={folderFormRef} onSubmit={handleCreateFolder} className="mb-4 flex gap-2">
             <input 
               type="text" 
               autoFocus
@@ -198,8 +249,8 @@ export default function NotesApp() {
                   </div>
                   
                   <button 
-                    onClick={(e) => handleDeleteFolder(e, folder.id)}
-                    className="absolute top-2 right-2 p-1.5 text-gray-300 hover:text-red-500 rounded-full bg-gray-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => promptDeleteFolder(e, folder.id)}
+                    className="absolute top-3 right-3 p-1.5 bg-white/80 backdrop-blur rounded-full text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 hover:bg-white"
                   >
                     <IconTrash2 size={14} />
                   </button>
@@ -223,9 +274,15 @@ export default function NotesApp() {
               {displayedNotes.map(note => (
                 <div 
                   key={note.id} 
-                  onClick={() => { setInitialModeForNewNote('type'); setActiveNote(note); }}
-                  className="bg-white p-4 rounded-2xl shadow-sm hover:shadow transition-all cursor-pointer group flex flex-col aspect-[3/4] relative"
+                  onClick={() => openExistingNote(note)}
+                  className="bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer relative group border border-transparent hover:border-stone-100 flex flex-col justify-between"
                 >
+                  <button 
+                    onClick={(e) => promptDeleteNote(e, note.id)}
+                    className="absolute top-3 right-3 p-1.5 bg-stone-100/80 backdrop-blur rounded-full text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 hover:bg-stone-200"
+                  >
+                    <IconTrash2 size={14} />
+                  </button>
                   <div className="flex-1 overflow-hidden">
                     <h4 className="font-bold text-gray-800 text-base leading-tight mb-2 line-clamp-2">
                       {note.title || 'Untitled Note'}
@@ -275,6 +332,32 @@ export default function NotesApp() {
           <span className="hidden sm:inline font-medium">Add Note</span>
         </button>
       </div>
+      {/* Modals */}
+      <Modal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title={`Delete ${deleteConfirm?.type === 'folder' ? 'Folder' : 'Note'}?`}>
+        <p className="text-stone-600 mb-6">
+          {deleteConfirm?.type === 'folder' 
+            ? "Are you sure you want to delete this folder? All notes inside it will also be permanently deleted."
+            : "Are you sure you want to delete this note? This action cannot be undone."}
+        </p>
+        <div className="flex gap-3 justify-end">
+          <button 
+            onClick={() => setDeleteConfirm(null)}
+            className="px-5 py-2.5 rounded-xl font-medium text-stone-600 hover:bg-stone-100 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={() => {
+              if (deleteConfirm.type === 'folder') confirmDeleteFolder(deleteConfirm.id);
+              else confirmDeleteNote(deleteConfirm.id);
+            }}
+            className="px-5 py-2.5 rounded-xl font-medium text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm shadow-red-600/20"
+          >
+            Yes, Delete
+          </button>
+        </div>
+      </Modal>
+
     </div>
   );
 }

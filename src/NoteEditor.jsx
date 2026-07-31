@@ -1,5 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PenTool as IconPenTool, Eraser as IconEraser, Type as IconType, Highlighter as IconHighlighter, ArrowLeft as IconArrowLeft, Trash2 as IconTrash2, Link2 as IconLink2 } from 'lucide-react';
+import { PenTool as IconPenTool, Eraser as IconEraser, Type as IconType, Highlighter as IconHighlighter, ArrowLeft as IconArrowLeft, Trash2 as IconTrash2, Link2 as IconLink2, X as IconX } from 'lucide-react';
+
+const Modal = ({ isOpen, onClose, title, children }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 print:hidden">
+      <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      <div className="bg-white w-full sm:w-[480px] rounded-t-3xl sm:rounded-2xl shadow-2xl relative z-10 animate-in slide-in-from-bottom-10 sm:slide-in-from-bottom-4 duration-300 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b border-stone-100">
+          <h3 className="text-lg font-semibold text-stone-800">{title}</h3>
+          <button onClick={onClose} className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-full transition-colors">
+            <IconX size={20} />
+          </button>
+        </div>
+        <div className="p-6 overflow-y-auto">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const COLORS = {
   black: '#000000',
@@ -56,6 +76,35 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
   const [paths, setPaths] = useState(note?.drawingPaths ? JSON.parse(note.drawingPaths) : []);
   const [currentPath, setCurrentPath] = useState(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [clearConfirm, setClearConfirm] = useState(false);
+
+  // Reference to current state for popstate handler
+  const stateRef = useRef({ title, htmlContent, paths, note });
+  useEffect(() => {
+    stateRef.current = { title, htmlContent, paths, note };
+  }, [title, htmlContent, paths, note]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const { title, paths, note } = stateRef.current;
+      const currentHtml = editorRef.current?.innerHTML || '';
+      const textContent = editorRef.current?.innerText || '';
+      
+      if (title.trim() || textContent.trim() || paths.length > 0) {
+        onSave({
+          title: title.trim() || 'Untitled Note',
+          richTextHTML: currentHtml,
+          textContent,
+          drawingPaths: JSON.stringify(paths)
+        });
+      } else {
+        onBack();
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [onSave, onBack]);
 
   useEffect(() => {
     // Lock body scroll to prevent Android/iOS from panning the entire viewport
@@ -175,29 +224,18 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
     if (drawTool === 'eraser') {
       eraseAtPoint(coords);
     } else if (currentPath) {
-      setCurrentPath(prev => ({
-        ...prev,
-        points: [...prev.points, coords]
-      }));
+      const newPath = {
+        ...currentPath,
+        points: [...currentPath.points, coords]
+      };
+      setCurrentPath(newPath);
+      
+      // Redraw everything to prevent highlighter overlapping at joints during fast drawing
+      redrawCanvas();
       
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
-      ctx.beginPath();
-      ctx.strokeStyle = currentPath.color;
-      ctx.lineWidth = currentPath.size;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      if (currentPath.isHighlighter) {
-        ctx.globalCompositeOperation = 'multiply';
-        ctx.globalAlpha = 0.3;
-      } else {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.globalAlpha = 1.0;
-      }
-      const lastPoint = currentPath.points[currentPath.points.length - 1];
-      ctx.moveTo(lastPoint.x, lastPoint.y);
-      ctx.lineTo(coords.x, coords.y);
-      ctx.stroke();
+      renderPathsToCanvas(ctx, [newPath]);
     }
   };
 
@@ -222,13 +260,21 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
     }));
   };
 
-  const handleBack = () => {
-    // Auto-save before going back
-    if (editorRef.current) {
-      const currentHtml = editorRef.current.innerHTML;
-      const textContent = editorRef.current.innerText || '';
-      
-      // Only save if there's actual content or title or drawings
+  const handleBackUI = () => {
+    // If the modal is open, just close the modal instead of going back
+    if (clearConfirm) {
+      setClearConfirm(false);
+      return;
+    }
+    
+    // Check if the history state is what we expect
+    if (window.history.state?.noteOpen) {
+      window.history.back(); // This triggers popstate, which auto-saves
+    } else {
+      // Fallback if somehow there's no state pushed
+      const { title, paths, note } = stateRef.current;
+      const currentHtml = editorRef.current?.innerHTML || '';
+      const textContent = editorRef.current?.innerText || '';
       if (title.trim() || textContent.trim() || paths.length > 0) {
         onSave({
           title: title.trim() || 'Untitled Note',
@@ -237,15 +283,9 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
           drawingPaths: JSON.stringify(paths)
         });
       } else {
-        // If totally empty, maybe delete it or just don't save
-        if (!note.id) {
-            // It was a new note that was empty, just go back
-            onBack();
-            return;
-        }
+        onBack();
       }
     }
-    onBack();
   };
 
   return (
@@ -253,7 +293,7 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
       {/* iOS Style Header */}
       <div className="bg-white/80 backdrop-blur-md border-b border-stone-200/50 px-2 py-3 flex items-center justify-between z-20 shrink-0 safe-top">
         <div className="flex items-center gap-1 flex-1">
-          <button onClick={handleBack} className="flex items-center text-[#4a3b32] px-2 py-1 active:opacity-50">
+          <button onClick={handleBackUI} className="flex items-center text-[#4a3b32] px-2 py-1 active:opacity-50">
             <IconArrowLeft size={24} />
             <span className="text-lg ml-1">Notes</span>
           </button>
@@ -271,20 +311,20 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
       </div>
 
       {/* Tools Toolbar (Floating/Sticky) */}
-      <div className="bg-white border-b border-stone-100 px-4 py-2.5 flex flex-wrap items-center justify-between gap-4 z-10 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] shrink-0">
+      <div className="bg-white border-b border-stone-100 px-4 py-2.5 flex items-center gap-4 z-10 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] shrink-0 overflow-x-auto no-scrollbar">
         {/* Mode Toggle */}
-        <div className="flex bg-stone-100/80 p-1 rounded-xl">
+        <div className="flex bg-stone-100/80 p-1 rounded-xl shrink-0">
           <button 
             onClick={() => setMode('type')} 
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'type' ? 'bg-white text-stone-800 shadow-sm scale-100' : 'text-stone-500 scale-95'}`}
+            className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'type' ? 'bg-white text-stone-800 shadow-sm scale-100' : 'text-stone-500 scale-95'}`}
           >
-            <IconType size={16} /> Type
+            <IconType size={18} /> <span className="hidden sm:inline">Type</span>
           </button>
           <button 
             onClick={() => setMode('draw')} 
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'draw' ? 'bg-white text-stone-800 shadow-sm scale-100' : 'text-stone-500 scale-95'}`}
+            className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'draw' ? 'bg-white text-stone-800 shadow-sm scale-100' : 'text-stone-500 scale-95'}`}
           >
-            <IconPenTool size={16} /> Draw
+            <IconPenTool size={18} /> <span className="hidden sm:inline">Draw</span>
           </button>
         </div>
 
@@ -302,9 +342,9 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-4 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-4 shrink-0">
             {/* Draw Tools */}
-            <div className="flex items-center bg-stone-50 p-1 rounded-xl border border-stone-100">
+            <div className="flex items-center bg-stone-50 p-1 rounded-xl border border-stone-100 shrink-0">
               <button onClick={() => setDrawTool('pen')} className={`p-2 rounded-lg transition-colors ${drawTool === 'pen' ? 'bg-white shadow-sm text-stone-800' : 'text-stone-400'}`}><IconPenTool size={20}/></button>
               <button onClick={() => setDrawTool('highlighter')} className={`p-2 rounded-lg transition-colors ${drawTool === 'highlighter' ? 'bg-white shadow-sm text-stone-800' : 'text-stone-400'}`}><IconHighlighter size={20}/></button>
               <button onClick={() => setDrawTool('eraser')} className={`p-2 rounded-lg transition-colors ${drawTool === 'eraser' ? 'bg-white shadow-sm text-stone-800' : 'text-stone-400'}`}><IconEraser size={20}/></button>
@@ -312,7 +352,7 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
             
             {/* Colors (only for pen) */}
             {drawTool === 'pen' && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-2 shrink-0 border-l border-stone-200">
                 {Object.values(COLORS).filter(c => c !== COLORS.yellow).map(c => (
                   <button 
                     key={c}
@@ -324,9 +364,23 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
               </div>
             )}
             
+            {/* Thickness */}
+            {drawTool !== 'highlighter' && (
+              <div className="flex items-center gap-3 px-3 shrink-0 border-l border-stone-200">
+                {[SIZES.thin, SIZES.medium, SIZES.thick].map((s, i) => (
+                  <button 
+                    key={s}
+                    onClick={() => setDrawSize(s)}
+                    className={`rounded-full transition-all flex items-center justify-center ${drawSize === s ? 'bg-stone-800 ring-2 ring-stone-200 ring-offset-1' : 'bg-stone-300 hover:bg-stone-400'}`}
+                    style={{ width: 8 + (i*4), height: 8 + (i*4) }}
+                  />
+                ))}
+              </div>
+            )}
+
             {/* Clear All */}
             {paths.length > 0 && (
-                <button onClick={() => { if(window.confirm('Clear all drawings?')) setPaths([]); }} className="text-sm font-semibold text-red-500 px-2 py-1 ml-auto">Clear</button>
+                <button onClick={() => setClearConfirm(true)} className="text-sm font-semibold text-red-500 px-2 py-1 ml-auto shrink-0">Clear</button>
             )}
           </div>
         )}
@@ -379,6 +433,27 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
           }}
         />
       </div>
+      
+      {/* Modals */}
+      <Modal isOpen={clearConfirm} onClose={() => setClearConfirm(false)} title="Clear all drawings?">
+        <p className="text-stone-600 mb-6">
+          Are you sure you want to clear all your handwriting and drawings? This action cannot be undone.
+        </p>
+        <div className="flex gap-3 justify-end">
+          <button 
+            onClick={() => setClearConfirm(false)}
+            className="px-5 py-2.5 rounded-xl font-medium text-stone-600 hover:bg-stone-100 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={() => { setPaths([]); setClearConfirm(false); }}
+            className="px-5 py-2.5 rounded-xl font-medium text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm shadow-red-600/20"
+          >
+            Yes, Clear
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
