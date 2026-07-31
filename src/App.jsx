@@ -512,6 +512,7 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
 const CalendarModal = ({ isOpen, onClose, selectedDate, onSelectDate }) => {
   const [viewDate, setViewDate] = useState(new Date(selectedDate));
   const [showPicker, setShowPicker] = useState(false);
+  const [monthCounts, setMonthCounts] = useState({});
 
   useEffect(() => {
     if (isOpen) {
@@ -520,10 +521,40 @@ const CalendarModal = ({ isOpen, onClose, selectedDate, onSelectDate }) => {
     }
   }, [isOpen, selectedDate]);
 
-  if (!isOpen) return null;
-
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
+
+  useEffect(() => {
+    if (isOpen) {
+      const fetchMonthData = async () => {
+        const mStr = String(month + 1).padStart(2, '0');
+        const startDate = `${year}-${mStr}-01`;
+        const endDate = `${year}-${mStr}-31`;
+        
+        try {
+          const q = query(
+            collection(db, 'programs'), 
+            where('date', '>=', startDate), 
+            where('date', '<=', endDate)
+          );
+          const snapshot = await getDocs(q);
+          const counts = {};
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.type !== 'todo') {
+              counts[data.date] = (counts[data.date] || 0) + 1;
+            }
+          });
+          setMonthCounts(counts);
+        } catch (error) {
+          console.error("Error fetching month counts:", error);
+        }
+      };
+      fetchMonthData();
+    }
+  }, [isOpen, year, month]);
+
+  if (!isOpen) return null;
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay = new Date(year, month, 1).getDay();
@@ -599,10 +630,13 @@ const CalendarModal = ({ isOpen, onClose, selectedDate, onSelectDate }) => {
 
           <div className="grid grid-cols-7 gap-1">
             {days.map((d, i) => {
-              if (!d) return <div key={i} className="h-10" />;
+              if (!d) return <div key={i} className="h-12" />;
               
               const isSelected = d.toDateString() === selectedDate.toDateString();
               const isToday = d.toDateString() === new Date().toDateString();
+              
+              const dayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+              const pCount = monthCounts[dayStr] || 0;
 
               return (
                 <button
@@ -611,13 +645,18 @@ const CalendarModal = ({ isOpen, onClose, selectedDate, onSelectDate }) => {
                     onSelectDate(d);
                     onClose();
                   }}
-                  className={`h-10 w-full rounded-full flex items-center justify-center text-sm transition-colors ${
+                  className={`h-12 relative w-full rounded-xl flex flex-col items-center justify-center text-sm transition-colors ${
                     isSelected ? 'bg-[#4a3b32] text-white font-bold shadow-md' :
                     isToday ? 'bg-amber-100 text-amber-900 font-semibold' :
                     'text-stone-700 hover:bg-stone-100'
                   }`}
                 >
-                  {d.getDate()}
+                  <span className="leading-none">{d.getDate()}</span>
+                  {pCount > 0 && (
+                    <span className={`text-[9px] mt-0.5 font-bold px-1 rounded-full ${isSelected ? 'text-white' : 'text-red-500 bg-red-50'}`}>
+                      {pCount}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -998,15 +1037,28 @@ const SettingsModal = ({ isOpen, onClose }) => {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const q = query(collection(db, 'programs'));
-      const snapshot = await getDocs(q);
-      const data = snapshot.docs.map(doc => {
+      const qPrograms = query(collection(db, 'programs'));
+      const snapshotPrograms = await getDocs(qPrograms);
+      const programsData = snapshotPrograms.docs.map(doc => {
         const d = doc.data();
-        d.id = doc.id; // Store ID for potential import mapping
+        d.id = doc.id;
+        return d;
+      });
+
+      const qStaff = query(collection(db, 'staff'));
+      const snapshotStaff = await getDocs(qStaff);
+      const staffData = snapshotStaff.docs.map(doc => {
+        const d = doc.data();
+        d.id = doc.id;
         return d;
       });
       
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const fullBackup = {
+        programs: programsData,
+        staff: staffData
+      };
+      
+      const blob = new Blob([JSON.stringify(fullBackup, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -1036,19 +1088,43 @@ const SettingsModal = ({ isOpen, onClose }) => {
     try {
       const text = await file.text();
       const importedData = JSON.parse(text);
-      if (!Array.isArray(importedData)) throw new Error("Invalid JSON format");
+      
+      let programsToImport = [];
+      let staffToImport = [];
 
-      // Delete existing
-      const q = query(collection(db, 'programs'));
-      const snapshot = await getDocs(q);
-      for (const d of snapshot.docs) {
-         await deleteDoc(doc(db, 'programs', d.id));
+      if (Array.isArray(importedData)) {
+        // Old format (just programs array)
+        programsToImport = importedData;
+      } else if (importedData.programs && Array.isArray(importedData.programs)) {
+        // New format (object with programs and staff)
+        programsToImport = importedData.programs;
+        if (importedData.staff) staffToImport = importedData.staff;
+      } else {
+        throw new Error("Invalid JSON format");
       }
 
-      // Add new
-      for (const item of importedData) {
-        delete item.id; // remove id from fields
+      // Restore Programs
+      const qPrograms = query(collection(db, 'programs'));
+      const snapshotPrograms = await getDocs(qPrograms);
+      for (const d of snapshotPrograms.docs) {
+         await deleteDoc(doc(db, 'programs', d.id));
+      }
+      for (const item of programsToImport) {
+        delete item.id;
         await addDoc(collection(db, 'programs'), item);
+      }
+
+      // Restore Staff (Only if new format was uploaded, to avoid wiping staff by accident with an old backup)
+      if (staffToImport.length > 0 || importedData.staff) {
+        const qStaff = query(collection(db, 'staff'));
+        const snapshotStaff = await getDocs(qStaff);
+        for (const d of snapshotStaff.docs) {
+           await deleteDoc(doc(db, 'staff', d.id));
+        }
+        for (const item of staffToImport) {
+          delete item.id;
+          await addDoc(collection(db, 'staff'), item);
+        }
       }
       
       alert("Database successfully imported! Please refresh the page.");
