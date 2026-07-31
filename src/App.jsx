@@ -2,6 +2,10 @@ import React, { useState, useEffect, createContext, useContext, useMemo, useRef 
 import { initializeApp } from 'firebase/app';
 import { getFirestore, initializeFirestore, persistentLocalCache, collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 
+const getLocalDateString = (date) => {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
 const IconCalendar = ({ size = 20, className = "" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
 );
@@ -1062,7 +1066,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `km-shaji-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `km-shaji-backup-${getLocalDateString(new Date())}.json`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -1269,7 +1273,7 @@ const MainApp = () => {
   const [printConfig, setPrintConfig] = useState({ timeFilter: 'all', priorityFilter: 'all', viewMode: 'schedule' });
 
   const permissions = useMemo(() => getPermissions(user.role), [user.role]);
-  const dateStr = currentDate.toISOString().split('T')[0];
+  const dateStr = getLocalDateString(currentDate);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -1591,7 +1595,7 @@ Fields to output:
 - eventName: The clean, professional name of the program, place, or person (e.g., instead of "uh I am going to meet the ADGP at", just output "Meeting with ADGP"). Keep it in the language the user spoke (Malayalam or English).
 - contactNumber: The phone number if mentioned, else "".
 - time: The time in 24-hour format "HH:MM" if mentioned (e.g., 11:00 AM -> 11:00, 2:00 PM -> 14:00), else "".
-- date: The date in "YYYY-MM-DD" format if a specific date or day is mentioned (e.g., tomorrow, next saturday, 12th Aug). Today's date is ${new Date().toISOString().split('T')[0]}. If no date is mentioned, return "".
+- date: The date in "YYYY-MM-DD" format if a specific date or day is mentioned (e.g., tomorrow, next saturday, 12th Aug). Today's date is ${getLocalDateString(new Date())}. If no date is mentioned, return "".
 
 User said: "${transcript}"`
             }]
