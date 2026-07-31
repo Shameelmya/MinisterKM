@@ -178,13 +178,13 @@ export default function NotesApp() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#f6f4f0] relative">
+    <div className="flex flex-col h-full bg-[#f6f4f0] relative max-w-3xl mx-auto w-full">
       {/* App Style Header */}
-      <div className="bg-[#f6f4f0] px-4 pt-6 pb-2 sticky top-0 z-10">
+      <div className="bg-[#f6f4f0] px-4 pt-6 pb-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-4">
           <button 
             onClick={() => setActiveFolderId(null)} 
-            className="text-3xl font-bold text-black"
+            className="text-xl font-bold text-[#3a2e26]"
           >
             {activeFolderId ? folders.find(f => f.id === activeFolderId)?.name || 'Folder' : 'Notes'}
           </button>
@@ -218,13 +218,13 @@ export default function NotesApp() {
         )}
 
         <div className="relative">
-          <IconSearch size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <IconSearch size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
           <input 
             type="text" 
             placeholder="Search notes" 
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-gray-200/60 border-none rounded-xl outline-none focus:bg-white focus:shadow-sm transition-all text-[17px] text-black placeholder-gray-500"
+            className="w-full pl-10 pr-4 py-2 bg-white border border-stone-200 rounded-full shadow-sm outline-none focus:border-[#4a3b32] focus:ring-2 focus:ring-[#4a3b32]/20 transition-all text-sm text-stone-800 placeholder-stone-400 h-10"
           />
         </div>
       </div>
@@ -234,25 +234,26 @@ export default function NotesApp() {
         {(!activeFolderId || searchQuery) && folders.length > 0 && (
           <div className="mb-8">
             {!searchQuery && <h3 className="text-sm font-semibold text-gray-500 mb-3 px-1">Folders</h3>}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {folders.map(folder => (
                 <div 
                   key={folder.id} 
                   onClick={() => { setActiveFolderId(folder.id); setSearchQuery(''); }}
-                  className="bg-white p-4 rounded-2xl shadow-sm hover:shadow transition-all cursor-pointer relative group flex flex-col items-center aspect-[4/3] justify-center"
+                  className="bg-white p-3 rounded-xl shadow-sm border-t-[5px] border-[#4a3b32] hover:shadow-md transition-all cursor-pointer relative group flex items-center gap-3"
                 >
-                  <IconFolder size={32} className="text-[#4a3b32] mb-2 opacity-80" fill="currentColor" />
-                  <span className="font-semibold text-gray-800 text-center text-sm line-clamp-2 w-full">{folder.name}</span>
-                  <div className="text-xs text-gray-400 mt-1">{notes.filter(n => n.folderId === folder.id).length} notes</div>
-                  <div className="text-[10px] text-gray-300 mt-1 uppercase tracking-wider font-medium">
-                    {folder.createdAt?.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  <div className="bg-stone-50 p-2 rounded-lg">
+                    <IconFolder size={24} className="text-[#4a3b32] opacity-80" fill="currentColor" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-semibold text-stone-800 text-sm line-clamp-1">{folder.name}</span>
+                    <div className="text-[10px] text-stone-400 font-medium mt-0.5">{notes.filter(n => n.folderId === folder.id).length} notes</div>
                   </div>
                   
                   <button 
                     onClick={(e) => promptDeleteFolder(e, folder.id)}
-                    className="absolute top-3 right-3 p-1.5 bg-white/80 backdrop-blur rounded-full text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 hover:bg-white"
+                    className="p-2 text-stone-300 hover:text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-stone-100"
                   >
-                    <IconTrash2 size={14} />
+                    <IconTrash2 size={16} />
                   </button>
                 </div>
               ))}
@@ -265,9 +266,14 @@ export default function NotesApp() {
           {!searchQuery && <h3 className="text-sm font-semibold text-gray-500 mb-3 px-1">{activeFolderId ? 'Notes in folder' : 'Notes'}</h3>}
           
           {displayedNotes.length === 0 ? (
-            <div className="py-12 flex flex-col items-center justify-center text-gray-400">
-              <IconFileText size={48} className="mb-3 opacity-20" />
-              <p>No notes found.</p>
+            <div className="flex flex-col items-center justify-center pt-12 pb-8 text-center animate-in fade-in duration-500">
+              <div className="w-20 h-20 bg-stone-200/50 rounded-full flex items-center justify-center mb-4 text-stone-400">
+                <IconFileText size={32} />
+              </div>
+              <h3 className="text-lg font-semibold text-stone-800 mb-1">
+                No notes found
+              </h3>
+              <p className="text-stone-500 text-sm mb-6">Create a new note or folder to get started.</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -293,15 +299,9 @@ export default function NotesApp() {
                   </div>
                   
                   <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                    <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">
                       {note.updatedAt?.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
-                    <button 
-                      onClick={(e) => handleDeleteNote(e, note.id)}
-                      className="p-1 text-gray-300 hover:text-red-500 rounded-full"
-                    >
-                      <IconTrash2 size={14} />
-                    </button>
                   </div>
                 </div>
               ))}
