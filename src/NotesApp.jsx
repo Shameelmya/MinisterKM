@@ -53,10 +53,20 @@ export default function NotesApp() {
     setSearchQuery('');
   };
 
+  const isCreatingFolderRef = useRef(isCreatingFolder);
+  useEffect(() => {
+    isCreatingFolderRef.current = isCreatingFolder;
+  }, [isCreatingFolder]);
+
   useEffect(() => {
     const handlePopState = (e) => {
       // NoteEditor handles its own popstate if a note is open.
       if (activeNote) return;
+
+      if (isCreatingFolderRef.current) {
+        setIsCreatingFolder(false);
+        setNewFolderName('');
+      }
 
       if (e.state && e.state.isFolderView !== undefined) {
         setActiveFolderId(e.state.folderId || null);
@@ -78,8 +88,9 @@ export default function NotesApp() {
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (folderFormRef.current && !folderFormRef.current.contains(e.target)) {
-        setIsCreatingFolder(false);
-        setNewFolderName('');
+        if (isCreatingFolderRef.current) {
+          window.history.back(); // Pops the state and relies on popstate listener to close
+        }
       }
     };
     if (isCreatingFolder) {
@@ -118,7 +129,7 @@ export default function NotesApp() {
         createdAt: serverTimestamp()
       });
       setNewFolderName('');
-      setIsCreatingFolder(false);
+      window.history.back(); // Pop the creating folder state
     } catch (error) {
       alert("Error creating folder: " + error.message);
     }
@@ -273,8 +284,15 @@ export default function NotesApp() {
           </div>
           
           <button 
-            onClick={() => setIsCreatingFolder(!isCreatingFolder)}
-            className="w-9 h-9 flex items-center justify-center bg-white rounded-full text-[#4a3b32] shadow-sm active:scale-95 transition-transform"
+            onClick={() => {
+              if (isCreatingFolder) {
+                window.history.back();
+              } else {
+                window.history.pushState({ creatingFolder: true }, '');
+                setIsCreatingFolder(true);
+              }
+            }}
+            className="w-9 h-9 flex items-center justify-center bg-white rounded-full text-[#4a3b32] shadow-sm active:scale-95 transition-transform shrink-0"
           >
             <IconFolderPlus size={20} />
           </button>
