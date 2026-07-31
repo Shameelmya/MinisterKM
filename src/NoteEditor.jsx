@@ -58,6 +58,14 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
   const [isDrawing, setIsDrawing] = useState(false);
 
   useEffect(() => {
+    // Lock body scroll to prevent Android/iOS from panning the entire viewport
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
@@ -243,7 +251,7 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
   return (
     <div className="flex flex-col h-full bg-white z-50 fixed inset-0">
       {/* iOS Style Header */}
-      <div className="bg-white/80 backdrop-blur-md border-b border-stone-200/50 px-2 py-3 flex items-center justify-between z-20 sticky top-0 safe-top">
+      <div className="bg-white/80 backdrop-blur-md border-b border-stone-200/50 px-2 py-3 flex items-center justify-between z-20 shrink-0 safe-top">
         <div className="flex items-center gap-1 flex-1">
           <button onClick={handleBack} className="flex items-center text-[#007AFF] px-2 py-1 active:opacity-50">
             <IconArrowLeft size={24} />
@@ -263,7 +271,7 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
       </div>
 
       {/* Tools Toolbar (Floating/Sticky) */}
-      <div className="bg-white border-b border-stone-100 px-4 py-2.5 flex flex-wrap items-center justify-between gap-4 z-10 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)]">
+      <div className="bg-white border-b border-stone-100 px-4 py-2.5 flex flex-wrap items-center justify-between gap-4 z-10 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] shrink-0">
         {/* Mode Toggle */}
         <div className="flex bg-stone-100/80 p-1 rounded-xl">
           <button 
