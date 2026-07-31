@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PenTool as IconPenTool, Eraser as IconEraser, Type as IconType, Highlighter as IconHighlighter, ArrowLeft as IconArrowLeft, Trash2 as IconTrash2, Link2 as IconLink2, X as IconX } from 'lucide-react';
+import { PenTool as IconPenTool, Eraser as IconEraser, Type as IconType, Highlighter as IconHighlighter, ArrowLeft as IconArrowLeft, Trash2 as IconTrash2, Link2 as IconLink2, X as IconX, ChevronRight as IconChevronRight } from 'lucide-react';
 
 const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
@@ -60,7 +60,7 @@ const renderPathsToCanvas = (ctx, paths) => {
   });
 };
 
-export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode = 'type' }) {
+export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDelete, initialMode = 'type' }) {
   const [mode, setMode] = useState(initialMode);
   const [drawTool, setDrawTool] = useState('pen'); 
   const [drawColor, setDrawColor] = useState(COLORS.black);
@@ -288,20 +288,43 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
     }
   };
 
+  const handleBreadcrumbClick = (targetDepth) => {
+    const currentDepth = folderPath.length + 1;
+    const stepsBack = currentDepth - targetDepth;
+    
+    if (window.history.state?.noteOpen && stepsBack > 0) {
+      window.history.go(-stepsBack);
+    } else {
+      handleBackUI();
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-white z-50 fixed inset-0">
       {/* iOS Style Header */}
       <div className="bg-white/80 backdrop-blur-md border-b border-stone-200/50 px-2 py-3 flex items-center justify-between z-20 shrink-0 safe-top">
-        <div className="flex items-center gap-1 flex-1">
-          <button onClick={handleBackUI} className="flex items-center text-[#4a3b32] px-2 py-1 active:opacity-50">
+        <div className="flex items-center gap-1 flex-1 overflow-x-auto no-scrollbar mask-edges pr-4">
+          <button onClick={handleBackUI} className="flex items-center text-[#4a3b32] px-2 py-1 active:opacity-50 shrink-0">
             <IconArrowLeft size={24} />
-            <span className="text-lg ml-1">Notes</span>
           </button>
+          
+          <button onClick={() => handleBreadcrumbClick(0)} className="text-lg font-semibold text-[#4a3b32] hover:opacity-80 shrink-0">
+            Notes
+          </button>
+          
+          {folderPath.map((f, idx) => (
+            <React.Fragment key={f.id}>
+              <IconChevronRight size={18} className="text-stone-400 shrink-0 mx-0.5" />
+              <button 
+                onClick={() => handleBreadcrumbClick(idx + 1)} 
+                className="text-lg font-semibold text-[#4a3b32] hover:opacity-80 shrink-0 truncate max-w-[120px] sm:max-w-[200px]"
+              >
+                {f.name}
+              </button>
+            </React.Fragment>
+          ))}
         </div>
-        <div className="flex-1 flex justify-center">
-            {/* Optional center title area if needed, we'll keep it clean */}
-        </div>
-        <div className="flex items-center justify-end gap-2 flex-1 pr-2">
+        <div className="flex items-center justify-end gap-2 shrink-0 pr-2">
           {note?.id && (
             <button onClick={onDelete} className="p-2 text-stone-400 hover:text-red-500 rounded-full transition-colors">
               <IconTrash2 size={22} />

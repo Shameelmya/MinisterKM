@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
 import { db } from './App'; 
-import { Folder as IconFolder, FolderPlus as IconFolderPlus, Search as IconSearch, FileText as IconFileText, Trash2 as IconTrash2, PenTool as IconPenTool, Edit3 as IconEdit3, ChevronDown as IconChevronDown, X as IconX } from 'lucide-react';
+import { Folder as IconFolder, FolderPlus as IconFolderPlus, Search as IconSearch, FileText as IconFileText, Trash2 as IconTrash2, PenTool as IconPenTool, Edit3 as IconEdit3, ChevronDown as IconChevronDown, X as IconX, ChevronRight as IconChevronRight, ArrowLeft as IconArrowLeft } from 'lucide-react';
 import NoteEditor from './NoteEditor';
 
 const Modal = ({ isOpen, onClose, title, children }) => {
@@ -27,9 +27,46 @@ const Modal = ({ isOpen, onClose, title, children }) => {
 export default function NotesApp() {
   const [folders, setFolders] = useState([]);
   const [notes, setNotes] = useState([]);
-  const [activeFolderId, setActiveFolderId] = useState(null); // null means root/all
+  const [activeFolderId, setActiveFolderId] = useState(null); // null means root
   const [activeNote, setActiveNote] = useState(null);
   const [initialModeForNewNote, setInitialModeForNewNote] = useState('type');
+  
+  const getFolderPath = (folderId) => {
+    const path = [];
+    let currentId = folderId;
+    while (currentId) {
+      const folder = folders.find(f => f.id === currentId);
+      if (folder) {
+        path.unshift(folder);
+        currentId = folder.parentId;
+      } else {
+        break;
+      }
+    }
+    return path;
+  };
+
+  const navigateToFolder = (folderId) => {
+    const depth = folderId ? getFolderPath(folderId).length : 0;
+    window.history.pushState({ folderId, isFolderView: true, depth }, '');
+    setActiveFolderId(folderId);
+    setSearchQuery('');
+  };
+
+  useEffect(() => {
+    const handlePopState = (e) => {
+      // NoteEditor handles its own popstate if a note is open.
+      if (activeNote) return;
+
+      if (e.state && e.state.isFolderView !== undefined) {
+        setActiveFolderId(e.state.folderId || null);
+      } else {
+        setActiveFolderId(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeNote]);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
@@ -76,7 +113,8 @@ export default function NotesApp() {
     if (!newFolderName.trim()) return;
     try {
       await addDoc(collection(db, 'folders'), {
-        name: newFolderName,
+        name: newFolderName.trim(),
+        parentId: activeFolderId || null,
         createdAt: serverTimestamp()
       });
       setNewFolderName('');
@@ -92,12 +130,28 @@ export default function NotesApp() {
   };
 
   const confirmDeleteFolder = async (folderId) => {
-    const folderNotes = notes.filter(n => n.folderId === folderId);
-    for (const n of folderNotes) {
-      await deleteDoc(doc(db, 'notes', n.id));
+    const getAllFolderIdsToDelete = (fId) => {
+      let ids = [fId];
+      const children = folders.filter(f => f.parentId === fId);
+      for (const child of children) {
+        ids = [...ids, ...getAllFolderIdsToDelete(child.id)];
+      }
+      return ids;
+    };
+    
+    const folderIdsToDelete = getAllFolderIdsToDelete(folderId);
+    
+    for (const id of folderIdsToDelete) {
+      const folderNotes = notes.filter(n => n.folderId === id);
+      for (const n of folderNotes) {
+        await deleteDoc(doc(db, 'notes', n.id));
+      }
+      await deleteDoc(doc(db, 'folders', id));
     }
-    await deleteDoc(doc(db, 'folders', folderId));
-    if (activeFolderId === folderId) setActiveFolderId(null);
+    
+    if (folderIdsToDelete.includes(activeFolderId)) {
+      setActiveFolderId(null);
+    }
     setDeleteConfirm(null);
   };
 
@@ -114,7 +168,8 @@ export default function NotesApp() {
     try {
       const docRef = await addDoc(collection(db, 'notes'), newNote);
       setInitialModeForNewNote(startMode);
-      window.history.pushState({ noteOpen: true }, '');
+      const depth = getFolderPath(activeFolderId).length + 1;
+      window.history.pushState({ noteOpen: true, depth }, '');
       setActiveNote({ id: docRef.id, ...newNote });
     } catch (error) {
       alert("Error creating note: " + error.message);
@@ -151,7 +206,8 @@ export default function NotesApp() {
 
   const openExistingNote = (note) => {
     setInitialModeForNewNote('type'); // Default when opening
-    window.history.pushState({ noteOpen: true }, '');
+    const depth = getFolderPath(activeFolderId).length + 1;
+    window.history.pushState({ noteOpen: true, depth }, '');
     setActiveNote(note);
   };
 
@@ -165,10 +221,18 @@ export default function NotesApp() {
     return activeFolderId ? note.folderId === activeFolderId : !note.folderId;
   });
 
+  const displayedFolders = folders.filter(f => {
+    if (searchQuery.trim()) {
+       return f.name.toLowerCase().includes(searchQuery.toLowerCase());
+    }
+    return f.parentId === (activeFolderId || null);
+  });
+
   if (activeNote) {
     return (
       <NoteEditor 
         note={activeNote} 
+        folderPath={getFolderPath(activeFolderId)}
         onSave={handleSaveNote} 
         onBack={() => setActiveNote(null)} 
         onDelete={(e) => promptDeleteNote(e, activeNote.id)}
@@ -182,12 +246,31 @@ export default function NotesApp() {
       {/* App Style Header */}
       <div className="bg-[#f6f4f0] px-4 pt-6 pb-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-4">
-          <button 
-            onClick={() => setActiveFolderId(null)} 
-            className="text-xl font-bold text-[#3a2e26]"
-          >
-            {activeFolderId ? folders.find(f => f.id === activeFolderId)?.name || 'Folder' : 'Notes'}
-          </button>
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar mask-edges flex-1 mr-2">
+            {activeFolderId && (
+              <button 
+                onClick={() => {
+                  const path = getFolderPath(activeFolderId);
+                  const parentId = path.length > 1 ? path[path.length - 2].id : null;
+                  navigateToFolder(parentId);
+                }} 
+                className="p-1 -ml-1 text-[#4a3b32] hover:bg-stone-200 rounded-lg shrink-0 mr-1"
+              >
+                 <IconArrowLeft size={22} />
+              </button>
+            )}
+            <button onClick={() => navigateToFolder(null)} className="text-xl font-bold text-[#3a2e26] shrink-0 hover:opacity-80">
+              Notes
+            </button>
+            {activeFolderId && getFolderPath(activeFolderId).map(f => (
+              <React.Fragment key={f.id}>
+                <IconChevronRight size={18} className="text-stone-400 shrink-0" />
+                <button onClick={() => navigateToFolder(f.id)} className="text-xl font-bold text-[#3a2e26] shrink-0 hover:opacity-80 truncate max-w-[120px] sm:max-w-[200px]">
+                  {f.name}
+                </button>
+              </React.Fragment>
+            ))}
+          </div>
           
           <button 
             onClick={() => setIsCreatingFolder(!isCreatingFolder)}
@@ -231,14 +314,14 @@ export default function NotesApp() {
 
       <div className="flex-1 overflow-y-auto px-4 pb-32">
         {/* Folders Grid - Only show on root level or search */}
-        {(!activeFolderId || searchQuery) && folders.length > 0 && (
+        {displayedFolders.length > 0 && (
           <div className="mb-8">
             {!searchQuery && <h3 className="text-sm font-semibold text-gray-500 mb-3 px-1">Folders</h3>}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {folders.map(folder => (
+              {displayedFolders.map(folder => (
                 <div 
                   key={folder.id} 
-                  onClick={() => { setActiveFolderId(folder.id); setSearchQuery(''); }}
+                  onClick={() => navigateToFolder(folder.id)}
                   className="bg-white p-3 rounded-xl shadow-sm border-t-[5px] border-[#4a3b32] hover:shadow-md transition-all cursor-pointer relative group flex items-center gap-3"
                 >
                   <div className="bg-stone-50 p-2 rounded-lg">
