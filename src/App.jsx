@@ -1093,11 +1093,10 @@ const SettingsModal = ({ isOpen, onClose }) => {
               <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-stone-100 text-xs text-stone-500 uppercase tracking-wider">
-                      <th className="px-4 py-3 font-semibold">Name</th>
-                      <th className="px-4 py-3 font-semibold">Password</th>
-                      <th className="px-4 py-3 font-semibold">Status</th>
-                      <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                    <tr className="bg-stone-100 text-[10px] sm:text-xs text-stone-500 uppercase tracking-wider">
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 font-semibold">Name</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 font-semibold">Password</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 font-semibold text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-200">
@@ -1108,20 +1107,25 @@ const SettingsModal = ({ isOpen, onClose }) => {
                     ) : (
                       staffList.map(staff => (
                         <tr key={staff.id} className="hover:bg-stone-50/50">
-                          <td className="px-4 py-3 font-medium text-[#3a2e26] text-sm">{staff.name}</td>
-                          <td className="px-4 py-3 text-sm text-stone-500 font-mono bg-stone-100 rounded px-2 m-1 inline-block">{staff.password}</td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${staff.isEnabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                              {staff.isEnabled ? 'Enabled' : 'Disabled'}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <button onClick={() => toggleStaffAccess(staff)} className={`text-xs px-3 py-1.5 rounded-lg font-medium mr-2 transition-colors ${staff.isEnabled ? 'bg-stone-200 text-stone-700 hover:bg-stone-300' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
-                              {staff.isEnabled ? 'Disable' : 'Enable'}
-                            </button>
-                            <button onClick={() => deleteStaff(staff.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors inline-flex align-middle">
-                              <IconTrash2 size={16} />
-                            </button>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 font-medium text-[#3a2e26] text-xs sm:text-sm">{staff.name}</td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-stone-500">{staff.password}</td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 text-right">
+                            <div className="flex justify-end items-center gap-2">
+                              <button 
+                                onClick={() => toggleStaffAccess(staff)} 
+                                className={`w-10 h-6 flex items-center rounded-full p-1 transition-colors ${staff.isEnabled ? 'bg-green-500' : 'bg-stone-300'}`}
+                                title={staff.isEnabled ? "Disable Staff" : "Enable Staff"}
+                              >
+                                <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${staff.isEnabled ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                              </button>
+                              <button 
+                                onClick={() => deleteStaff(staff.id)} 
+                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Delete Staff"
+                              >
+                                <IconTrash2 size={18} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
