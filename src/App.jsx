@@ -57,6 +57,9 @@ const IconLink = ({ size = 20, className = "" }) => (
 const IconMic = ({ size = 20, className = "" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
 );
+const IconSettings = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+);
 
 const firebaseConfig = {
   apiKey: "AIzaSyB-944yLcCXCT_ZPuvsSTRroNV-Gxdiw3c",
@@ -103,17 +106,38 @@ const LoginCover = () => {
   const [selectedRole, setSelectedRole] = useState(null);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  
+  // Staff specific states
+  const [staffList, setStaffList] = useState([]);
+  const [loadingStaff, setLoadingStaff] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState(null);
 
   useEffect(() => {
     const handleHashChange = () => {
       if (window.location.hash !== '#login' && selectedRole) {
         setSelectedRole(null);
+        setSelectedStaff(null);
         setError('');
         setPassword('');
       }
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [selectedRole]);
+
+  useEffect(() => {
+    if (selectedRole === ROLES.PS_VIEW) {
+      setLoadingStaff(true);
+      const q = query(collection(db, 'staff'), where('isEnabled', '==', true));
+      getDocs(q).then(snapshot => {
+         const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+         setStaffList(list);
+         setLoadingStaff(false);
+      }).catch(err => {
+         console.error(err);
+         setLoadingStaff(false);
+      });
+    }
   }, [selectedRole]);
 
   const selectRole = (role) => {
@@ -126,14 +150,14 @@ const LoginCover = () => {
     setError('');
     
     let isValid = false;
-    if (selectedRole === ROLES.PS_EDIT && password === 'hisham@edit') {
-      isValid = true;
-    } else if (selectedRole === ROLES.PS_VIEW && password === 'view@diary') {
-      isValid = true;
+    if (selectedRole === ROLES.PS_EDIT) {
+      if (password === 'hisham@edit') isValid = true;
+    } else if (selectedRole === ROLES.PS_VIEW && selectedStaff) {
+      if (password === selectedStaff.password) isValid = true;
     }
 
     if (isValid) {
-      login(selectedRole);
+      login(selectedRole, selectedStaff ? selectedStaff.name : 'Admin');
     } else {
       setError('Incorrect password');
     }
@@ -177,18 +201,55 @@ const LoginCover = () => {
                 </button>
               </div>
             </div>
+          ) : selectedRole === ROLES.PS_VIEW && !selectedStaff ? (
+            <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="flex items-center text-sm font-medium text-stone-500 mb-4">
+                <button type="button" onClick={() => window.history.back()} className="flex items-center hover:text-stone-800 transition-colors">
+                  <IconChevronLeft size={16} className="mr-1" /> Back
+                </button>
+                <span className="mx-auto bg-stone-100 px-3 py-1 rounded-full text-stone-700 text-xs">Select Staff</span>
+              </div>
+              
+              {loadingStaff ? (
+                <div className="flex justify-center py-8">
+                  <div className="w-8 h-8 border-4 border-stone-200 border-t-[#4a3b32] rounded-full animate-spin"></div>
+                </div>
+              ) : staffList.length === 0 ? (
+                <div className="text-center py-8 text-stone-500 text-sm">
+                  No staff accounts are currently active.<br/>Please contact the administrator.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {staffList.map(staff => (
+                    <button
+                      key={staff.id}
+                      onClick={() => setSelectedStaff(staff)}
+                      className="w-full text-left px-4 py-3 bg-stone-50 hover:bg-stone-100 rounded-xl border border-stone-200 font-medium text-stone-700 transition-colors flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#eae6e1] text-[#4a3b32] flex items-center justify-center font-bold">
+                          {staff.name.charAt(0).toUpperCase()}
+                        </div>
+                        {staff.name}
+                      </div>
+                      <IconChevronRight size={16} className="text-stone-400" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ) : (
             <form onSubmit={handleLogin} className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="flex items-center text-sm font-medium text-stone-500 mb-2">
                 <button 
                   type="button" 
-                  onClick={() => window.history.back()}
+                  onClick={() => selectedRole === ROLES.PS_VIEW ? setSelectedStaff(null) : window.history.back()}
                   className="flex items-center hover:text-stone-800 transition-colors"
                 >
                   <IconChevronLeft size={16} className="mr-1" /> Back
                 </button>
                 <span className="mx-auto bg-stone-100 px-3 py-1 rounded-full text-stone-700 text-xs">
-                  {roleLabels[selectedRole]}
+                  {selectedStaff ? selectedStaff.name : roleLabels[selectedRole]}
                 </span>
               </div>
               
@@ -208,7 +269,7 @@ const LoginCover = () => {
               <button
                 type="submit"
                 disabled={!password}
-                className="w-full py-3.5 bg-[#4a3b32] text-white rounded-xl font-medium hover:bg-[#3a2e26] transition-colors flex justify-center items-center"
+                className="w-full py-3.5 bg-[#4a3b32] text-white rounded-xl font-medium hover:bg-[#3a2e26] transition-colors flex justify-center items-center shadow-lg shadow-[#4a3b32]/30 active:scale-[0.98]"
               >
                 Sign In
               </button>
@@ -859,6 +920,246 @@ const ProgramCard = ({ program }) => {
   );
 };
 
+const SettingsModal = ({ isOpen, onClose }) => {
+  const [activeTab, setActiveTab] = useState('staff');
+  
+  // Staff State
+  const [staffList, setStaffList] = useState([]);
+  const [newStaffName, setNewStaffName] = useState('');
+  const [newStaffPassword, setNewStaffPassword] = useState('');
+  const [isAddingStaff, setIsAddingStaff] = useState(false);
+  const [loadingStaff, setLoadingStaff] = useState(false);
+
+  // Backup State
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen && activeTab === 'staff') {
+      fetchStaff();
+    }
+  }, [isOpen, activeTab]);
+
+  const fetchStaff = async () => {
+    setLoadingStaff(true);
+    try {
+      const q = query(collection(db, 'staff'));
+      const snapshot = await getDocs(q);
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setStaffList(list);
+    } catch (error) {
+      console.error(error);
+    }
+    setLoadingStaff(false);
+  };
+
+  const handleAddStaff = async (e) => {
+    e.preventDefault();
+    if (!newStaffName.trim() || !newStaffPassword.trim()) return;
+    setIsAddingStaff(true);
+    try {
+      await addDoc(collection(db, 'staff'), {
+        name: newStaffName.trim(),
+        password: newStaffPassword.trim(),
+        isEnabled: true,
+        createdAt: new Date().toISOString()
+      });
+      setNewStaffName('');
+      setNewStaffPassword('');
+      fetchStaff();
+    } catch (error) {
+      alert('Error adding staff');
+    }
+    setIsAddingStaff(false);
+  };
+
+  const toggleStaffAccess = async (staff) => {
+    try {
+      await updateDoc(doc(db, 'staff', staff.id), {
+        isEnabled: !staff.isEnabled
+      });
+      setStaffList(prev => prev.map(s => s.id === staff.id ? { ...s, isEnabled: !staff.isEnabled } : s));
+    } catch (error) {
+      alert('Error updating staff access');
+    }
+  };
+
+  const deleteStaff = async (staffId) => {
+    if (!window.confirm("Are you sure you want to delete this staff member?")) return;
+    try {
+      await deleteDoc(doc(db, 'staff', staffId));
+      setStaffList(prev => prev.filter(s => s.id !== staffId));
+    } catch (error) {
+      alert('Error deleting staff');
+    }
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const q = query(collection(db, 'programs'));
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(doc => {
+        const d = doc.data();
+        d.id = doc.id; // Store ID for potential import mapping
+        return d;
+      });
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `km-shaji-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      alert('Export failed.');
+    }
+    setIsExporting(false);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!window.confirm("WARNING: Importing data will OVERWRITE your entire existing database. Are you absolutely sure you want to proceed?")) {
+      e.target.value = '';
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const text = await file.text();
+      const importedData = JSON.parse(text);
+      if (!Array.isArray(importedData)) throw new Error("Invalid JSON format");
+
+      // Delete existing
+      const q = query(collection(db, 'programs'));
+      const snapshot = await getDocs(q);
+      for (const d of snapshot.docs) {
+         await deleteDoc(doc(db, 'programs', d.id));
+      }
+
+      // Add new
+      for (const item of importedData) {
+        delete item.id; // remove id from fields
+        await addDoc(collection(db, 'programs'), item);
+      }
+      
+      alert("Database successfully imported! Please refresh the page.");
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      alert("Import failed. Make sure the file is a valid JSON backup.");
+    }
+    setIsImporting(false);
+    e.target.value = '';
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-stone-200 bg-stone-50/50">
+          <h2 className="text-xl font-bold text-[#3a2e26] flex items-center gap-2">
+            <IconSettings size={22} className="text-[#7a6b63]" /> Admin Settings
+          </h2>
+          <button onClick={onClose} className="p-2 bg-white text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-full transition-all border border-stone-200 shadow-sm"><IconX size={20} /></button>
+        </div>
+
+        <div className="flex border-b border-stone-200">
+          <button onClick={() => setActiveTab('staff')} className={`flex-1 py-3 text-sm font-semibold transition-colors ${activeTab === 'staff' ? 'text-[#4a3b32] border-b-2 border-[#4a3b32]' : 'text-stone-500 hover:bg-stone-50'}`}>Staff Access</button>
+          <button onClick={() => setActiveTab('backup')} className={`flex-1 py-3 text-sm font-semibold transition-colors ${activeTab === 'backup' ? 'text-[#4a3b32] border-b-2 border-[#4a3b32]' : 'text-stone-500 hover:bg-stone-50'}`}>Data Backup</button>
+        </div>
+
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 bg-stone-50/30">
+          {activeTab === 'staff' ? (
+            <div className="space-y-6">
+              <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm">
+                <h3 className="text-sm font-bold text-[#3a2e26] mb-4">Add New Staff</h3>
+                <form onSubmit={handleAddStaff} className="flex flex-col sm:flex-row gap-3">
+                  <input type="text" placeholder="Staff Name" value={newStaffName} onChange={e => setNewStaffName(e.target.value)} className="flex-1 px-4 py-2.5 rounded-xl border border-stone-300 focus:border-[#4a3b32] outline-none text-sm" required />
+                  <input type="text" placeholder="Password" value={newStaffPassword} onChange={e => setNewStaffPassword(e.target.value)} className="flex-1 px-4 py-2.5 rounded-xl border border-stone-300 focus:border-[#4a3b32] outline-none text-sm" required />
+                  <button type="submit" disabled={isAddingStaff} className="px-6 py-2.5 bg-[#4a3b32] text-white font-semibold rounded-xl hover:bg-[#3a2e26] transition-colors shadow-md">{isAddingStaff ? 'Adding...' : 'Add'}</button>
+                </form>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-stone-100 text-xs text-stone-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 font-semibold">Name</th>
+                      <th className="px-4 py-3 font-semibold">Password</th>
+                      <th className="px-4 py-3 font-semibold">Status</th>
+                      <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-200">
+                    {loadingStaff ? (
+                      <tr><td colSpan="4" className="p-6 text-center text-sm text-stone-400">Loading staff...</td></tr>
+                    ) : staffList.length === 0 ? (
+                      <tr><td colSpan="4" className="p-6 text-center text-sm text-stone-400">No staff accounts found.</td></tr>
+                    ) : (
+                      staffList.map(staff => (
+                        <tr key={staff.id} className="hover:bg-stone-50/50">
+                          <td className="px-4 py-3 font-medium text-[#3a2e26] text-sm">{staff.name}</td>
+                          <td className="px-4 py-3 text-sm text-stone-500 font-mono bg-stone-100 rounded px-2 m-1 inline-block">{staff.password}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${staff.isEnabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                              {staff.isEnabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button onClick={() => toggleStaffAccess(staff)} className={`text-xs px-3 py-1.5 rounded-lg font-medium mr-2 transition-colors ${staff.isEnabled ? 'bg-stone-200 text-stone-700 hover:bg-stone-300' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
+                              {staff.isEnabled ? 'Disable' : 'Enable'}
+                            </button>
+                            <button onClick={() => deleteStaff(staff.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors inline-flex align-middle">
+                              <IconTrash2 size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-bold text-[#3a2e26] mb-1">Export Database</h3>
+                  <p className="text-sm text-stone-500">Download a full JSON backup of all schedules and tasks.</p>
+                </div>
+                <button onClick={handleExport} disabled={isExporting} className="w-full sm:w-auto px-6 py-3 bg-stone-800 text-white font-semibold rounded-xl hover:bg-black transition-colors flex items-center justify-center gap-2 shadow-md whitespace-nowrap">
+                  {isExporting ? 'Exporting...' : 'Export JSON Backup'}
+                </button>
+              </div>
+
+              <div className="bg-red-50 p-6 rounded-2xl border border-red-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-bold text-red-800 mb-1">Import Database</h3>
+                  <p className="text-sm text-red-600/80">Upload a JSON backup. <strong className="text-red-700">WARNING: This will completely overwrite existing data.</strong></p>
+                </div>
+                <input type="file" accept=".json" ref={fileInputRef} onChange={handleImportFile} className="hidden" />
+                <button onClick={handleImportClick} disabled={isImporting} className="w-full sm:w-auto px-6 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2 shadow-md whitespace-nowrap">
+                  {isImporting ? 'Importing...' : 'Import JSON Backup'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MainApp = () => {
   const { user, logout } = useContext(AuthContext);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -874,6 +1175,7 @@ const MainApp = () => {
   const [isPrintOpen, setIsPrintOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   
   const [isListening, setIsListening] = useState(false);
@@ -896,11 +1198,12 @@ const MainApp = () => {
       if (hash !== '#edit' && editProgram) setEditProgram(null);
       if (hash !== '#calendar' && isCalendarOpen) setIsCalendarOpen(false);
       if (hash !== '#export' && isPrintOpen) setIsPrintOpen(false);
+      if (hash !== '#settings' && isSettingsOpen) setIsSettingsOpen(false);
       if (hash !== '#logout' && isLogoutConfirmOpen) setIsLogoutConfirmOpen(false);
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [isAddOpen, editProgram, isCalendarOpen, isPrintOpen, isLogoutConfirmOpen]);
+  }, [isAddOpen, editProgram, isCalendarOpen, isPrintOpen, isSettingsOpen, isLogoutConfirmOpen]);
 
   const openModal = (hash, setter, value = true) => {
     setter(value);
@@ -1300,20 +1603,22 @@ User said: "${transcript}"`
                </div>
                
                {/* View Toggle */}
-               <div className="hidden sm:flex items-center bg-stone-100 p-1 rounded-full border border-stone-200">
-                  <button 
-                    onClick={() => setViewMode('schedule')} 
-                    className={`px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-all ${viewMode === 'schedule' ? 'bg-white shadow-sm text-[#4a3b32]' : 'text-stone-500 hover:text-stone-700'}`}
-                  >
-                    Schedule
-                  </button>
-                  <button 
-                    onClick={() => setViewMode('todo')} 
-                    className={`px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-all ${viewMode === 'todo' ? 'bg-white shadow-sm text-[#4a3b32]' : 'text-stone-500 hover:text-stone-700'}`}
-                  >
-                    To Do
-                  </button>
-               </div>
+               {user.role === ROLES.PS_EDIT && (
+                 <div className="hidden sm:flex items-center bg-stone-100 p-1 rounded-full border border-stone-200">
+                    <button 
+                      onClick={() => setViewMode('schedule')} 
+                      className={`px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-all ${viewMode === 'schedule' ? 'bg-white shadow-sm text-[#4a3b32]' : 'text-stone-500 hover:text-stone-700'}`}
+                    >
+                      Schedule
+                    </button>
+                    <button 
+                      onClick={() => setViewMode('todo')} 
+                      className={`px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-all ${viewMode === 'todo' ? 'bg-white shadow-sm text-[#4a3b32]' : 'text-stone-500 hover:text-stone-700'}`}
+                    >
+                      To Do
+                    </button>
+                 </div>
+               )}
             </div>
             
             {/* Actions (Right) */}
@@ -1334,6 +1639,15 @@ User said: "${transcript}"`
                 <span className="hidden sm:inline">Export</span>
               </button>
               <div className="w-px h-5 bg-[#d6cfc7] mx-1 hidden sm:block"></div>
+              {user.role === ROLES.PS_EDIT && (
+                <button 
+                  onClick={() => openModal('#settings', setIsSettingsOpen)}
+                  className="p-2 text-[#7a6b63] hover:text-[#3a2e26] hover:bg-[#eae6e1] rounded-lg transition-colors"
+                  title="Settings"
+                >
+                  <IconSettings size={18} />
+                </button>
+              )}
               <button 
                 onClick={() => openModal('#logout', setIsLogoutConfirmOpen)}
                 className="p-2 text-[#7a6b63] hover:text-[#3a2e26] hover:bg-[#eae6e1] rounded-lg transition-colors"
@@ -1432,10 +1746,12 @@ User said: "${transcript}"`
               <IconBookOpen size={20} className="mb-1" />
               <span className="text-[10px] font-semibold">Schedule</span>
             </button>
-            <button onClick={() => { window.scrollTo(0, 0); setViewMode('todo'); }} className={`flex flex-col items-center justify-center w-full h-full ${viewMode === 'todo' ? 'text-[#4a3b32]' : 'text-[#8a7f78] hover:text-[#3a2e26]'}`}>
-              <IconCheckCircle size={20} className="mb-1" />
-              <span className="text-[10px] font-semibold">To-Do</span>
-            </button>
+            {user.role === ROLES.PS_EDIT && (
+              <button onClick={() => { window.scrollTo(0, 0); setViewMode('todo'); }} className={`flex flex-col items-center justify-center w-full h-full ${viewMode === 'todo' ? 'text-[#4a3b32]' : 'text-[#8a7f78] hover:text-[#3a2e26]'}`}>
+                <IconCheckCircle size={20} className="mb-1" />
+                <span className="text-[10px] font-semibold">To-Do</span>
+              </button>
+            )}
             <button onClick={() => openModal('#calendar', setIsCalendarOpen)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26]">
               <IconCalendar size={20} className="mb-1" />
               <span className="text-[10px] font-medium">Calendar</span>
@@ -1503,6 +1819,8 @@ User said: "${transcript}"`
             </div>
           </div>
         </Modal>
+
+        <SettingsModal isOpen={isSettingsOpen} onClose={() => closeModal('#settings', setIsSettingsOpen)} />
 
         {/* PDF EXPORT CONTENT - HIDDEN BEHIND APP */}
         <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-[-50] overflow-hidden">
@@ -1605,8 +1923,8 @@ export default function App() {
     }
   });
 
-  const login = (role) => {
-    const newUser = { id: 'local-user', role };
+  const login = (role, name = 'Admin') => {
+    const newUser = { id: 'local-user', role, name };
     setUser(newUser);
     sessionStorage.setItem('appUser', JSON.stringify(newUser));
   };
