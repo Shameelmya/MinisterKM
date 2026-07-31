@@ -1642,7 +1642,7 @@ User said: "${transcript}"`
               {user.role === ROLES.PS_EDIT && (
                 <button 
                   onClick={() => openModal('#settings', setIsSettingsOpen)}
-                  className="p-2 text-[#7a6b63] hover:text-[#3a2e26] hover:bg-[#eae6e1] rounded-lg transition-colors"
+                  className="hidden sm:block p-2 text-[#7a6b63] hover:text-[#3a2e26] hover:bg-[#eae6e1] rounded-lg transition-colors"
                   title="Settings"
                 >
                   <IconSettings size={18} />
@@ -1756,6 +1756,12 @@ User said: "${transcript}"`
               <IconCalendar size={20} className="mb-1" />
               <span className="text-[10px] font-medium">Calendar</span>
             </button>
+            {user.role === ROLES.PS_EDIT && (
+              <button onClick={() => openModal('#settings', setIsSettingsOpen)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26]">
+                <IconSettings size={20} className="mb-1" />
+                <span className="text-[10px] font-medium">Settings</span>
+              </button>
+            )}
             <button onClick={() => openModal('#logout', setIsLogoutConfirmOpen)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26]">
               <IconUser size={20} className="mb-1" />
               <span className="text-[10px] font-medium">Exit</span>
