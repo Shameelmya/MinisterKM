@@ -109,10 +109,10 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
     
     const tempHtml = html.replace(/<a [^>]+>(.*?)<\/a>/g, '%%LINK%%$1%%/LINK%%');
     
-    let newHtml = tempHtml.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" class="text-[#007AFF] underline" contenteditable="false">$1</a>');
+    let newHtml = tempHtml.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" class="text-[#4a3b32] underline font-semibold" contenteditable="false">$1</a>');
     
     newHtml = newHtml.replace(/(?<!\d)(?:\+91|0)?[6-9]\d{9}(?!\d)/g, (match) => {
-      return `<a href="tel:${match}" class="text-[#007AFF] underline" contenteditable="false">${match}</a>`;
+      return `<a href="tel:${match}" class="text-[#4a3b32] underline font-semibold" contenteditable="false">${match}</a>`;
     });
     
     newHtml = newHtml.replace(/%%LINK%%(.*?)%%\/?LINK%%/g, '$1');
@@ -253,7 +253,7 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
       {/* iOS Style Header */}
       <div className="bg-white/80 backdrop-blur-md border-b border-stone-200/50 px-2 py-3 flex items-center justify-between z-20 shrink-0 safe-top">
         <div className="flex items-center gap-1 flex-1">
-          <button onClick={handleBack} className="flex items-center text-[#007AFF] px-2 py-1 active:opacity-50">
+          <button onClick={handleBack} className="flex items-center text-[#4a3b32] px-2 py-1 active:opacity-50">
             <IconArrowLeft size={24} />
             <span className="text-lg ml-1">Notes</span>
           </button>
@@ -297,7 +297,7 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
             <button onClick={() => execCmd('bold')} className="px-3 py-1.5 text-base font-bold text-stone-700 hover:bg-stone-50 rounded-lg">B</button>
             <button onClick={() => execCmd('italic')} className="px-3 py-1.5 text-base italic font-serif text-stone-700 hover:bg-stone-50 rounded-lg">I</button>
             <div className="w-px h-5 bg-stone-200 mx-1"></div>
-            <button onClick={formatLinks} className="px-3 py-1.5 text-[#007AFF] hover:bg-blue-50 rounded-lg flex items-center gap-1" title="Linkify URLs & Phones">
+            <button onClick={formatLinks} className="px-3 py-1.5 text-[#4a3b32] hover:bg-stone-50 rounded-lg flex items-center gap-1" title="Linkify URLs & Phones">
                 <IconLink2 size={18} />
             </button>
           </div>
@@ -355,10 +355,8 @@ export default function NoteEditor({ note, onSave, onBack, onDelete, initialMode
                 contentEditable={mode === 'type'}
                 suppressContentEditableWarning
                 onBlur={(e) => setHtmlContent(e.target.innerHTML)}
-                className="min-h-[500px] px-6 sm:px-10 pb-20 outline-none text-stone-800 leading-relaxed prose prose-stone max-w-none"
+                className="min-h-[500px] px-6 sm:px-10 pb-20 outline-none text-stone-800 leading-relaxed prose prose-stone max-w-none font-sans"
                 style={{ 
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-                    fontSize: "1.15rem",
                     zIndex: 1, 
                     position: 'relative' 
                 }}
