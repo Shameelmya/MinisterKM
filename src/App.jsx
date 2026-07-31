@@ -969,7 +969,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
       setNewStaffPassword('');
       fetchStaff();
     } catch (error) {
-      alert('Error adding staff');
+      alert('Error adding staff: ' + error.message);
     }
     setIsAddingStaff(false);
   };
@@ -981,7 +981,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
       });
       setStaffList(prev => prev.map(s => s.id === staff.id ? { ...s, isEnabled: !staff.isEnabled } : s));
     } catch (error) {
-      alert('Error updating staff access');
+      alert('Error updating staff access: ' + error.message);
     }
   };
 
@@ -991,7 +991,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
       await deleteDoc(doc(db, 'staff', staffId));
       setStaffList(prev => prev.filter(s => s.id !== staffId));
     } catch (error) {
-      alert('Error deleting staff');
+      alert('Error deleting staff: ' + error.message);
     }
   };
 
