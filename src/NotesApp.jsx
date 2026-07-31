@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
 import { db } from './App'; 
-import { Folder as IconFolder, Plus as IconPlus, Search as IconSearch, FileText as IconFileText, Trash2 as IconTrash2, PenTool as IconPenTool, Edit3 as IconEdit3, ChevronDown as IconChevronDown } from 'lucide-react';
+import { Folder as IconFolder, FolderPlus as IconFolderPlus, Search as IconSearch, FileText as IconFileText, Trash2 as IconTrash2, PenTool as IconPenTool, Edit3 as IconEdit3, ChevronDown as IconChevronDown } from 'lucide-react';
 import NoteEditor from './NoteEditor';
 
 export default function NotesApp() {
@@ -140,22 +140,29 @@ export default function NotesApp() {
           
           <button 
             onClick={() => setIsCreatingFolder(!isCreatingFolder)}
-            className="w-8 h-8 flex items-center justify-center bg-white rounded-full text-[#007AFF] shadow-sm active:scale-95 transition-transform"
+            className="w-9 h-9 flex items-center justify-center bg-white rounded-full text-[#007AFF] shadow-sm active:scale-95 transition-transform"
           >
-            <IconPlus size={20} />
+            <IconFolderPlus size={20} />
           </button>
         </div>
 
         {isCreatingFolder && (
-          <form onSubmit={handleCreateFolder} className="mb-4">
+          <form onSubmit={handleCreateFolder} className="mb-4 flex gap-2">
             <input 
               type="text" 
               autoFocus
               placeholder="New Folder Name"
               value={newFolderName}
               onChange={e => setNewFolderName(e.target.value)}
-              className="w-full px-4 py-3 bg-white border-none rounded-xl shadow-sm outline-none text-base focus:ring-2 focus:ring-[#007AFF]/20"
+              className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm outline-none text-base focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 transition-all"
             />
+            <button 
+              type="submit"
+              disabled={!newFolderName.trim()}
+              className="px-5 py-3 bg-[#007AFF] text-white font-semibold rounded-xl shadow-sm hover:bg-[#0056b3] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              Create
+            </button>
           </form>
         )}
 
@@ -186,6 +193,9 @@ export default function NotesApp() {
                   <IconFolder size={32} className="text-[#007AFF] mb-2 opacity-80" fill="currentColor" />
                   <span className="font-semibold text-gray-800 text-center text-sm line-clamp-2 w-full">{folder.name}</span>
                   <div className="text-xs text-gray-400 mt-1">{notes.filter(n => n.folderId === folder.id).length} notes</div>
+                  <div className="text-[10px] text-gray-300 mt-1 uppercase tracking-wider font-medium">
+                    {folder.createdAt?.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </div>
                   
                   <button 
                     onClick={(e) => handleDeleteFolder(e, folder.id)}
@@ -244,23 +254,23 @@ export default function NotesApp() {
       </div>
 
       {/* Floating Action Buttons */}
-      <div className="fixed bottom-24 sm:bottom-10 right-6 flex items-end gap-3 z-30 flex-col">
+      <div className="fixed bottom-24 sm:bottom-10 right-6 flex items-center justify-end gap-3 z-30 flex-col">
         {/* Handwriting Note FAB */}
         <button 
           onClick={() => handleCreateNote('draw')}
-          className="w-12 h-12 flex items-center justify-center bg-white text-[#007AFF] rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:scale-105 active:scale-95 transition-all border border-gray-100"
+          className="w-14 h-14 flex items-center justify-center bg-white text-[#007AFF] rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:scale-105 active:scale-95 transition-all border border-gray-100"
           title="New Handwriting Note"
         >
-          <IconEdit3 size={22} />
+          <IconEdit3 size={24} />
         </button>
         
         {/* Standard Text Note FAB */}
         <button 
           onClick={() => handleCreateNote('type')}
-          className="w-14 h-14 flex items-center justify-center bg-[#007AFF] text-white rounded-full shadow-[0_8px_30px_rgba(0,122,255,0.3)] hover:scale-105 active:scale-95 transition-all"
+          className="w-14 h-14 flex items-center justify-center bg-[#007AFF] text-white rounded-full shadow-[0_4px_20px_rgba(0,122,255,0.3)] hover:scale-105 active:scale-95 transition-all"
           title="New Note"
         >
-          <IconPenTool size={26} />
+          <IconPenTool size={24} />
         </button>
       </div>
     </div>
