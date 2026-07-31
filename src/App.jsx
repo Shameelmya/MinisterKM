@@ -1,7 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, useMemo, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, initializeFirestore, persistentLocalCache, collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs, onSnapshot } from 'firebase/firestore';
-import NotesApp from './NotesApp';
 
 const getLocalDateString = (date) => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -24,9 +23,6 @@ const IconCheckCircle = ({ size = 20, className = "" }) => (
 );
 const IconCircle = ({ size = 20, className = "" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle></svg>
-);
-const IconPenTool = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path><path d="M2 2l7.586 7.586"></path><circle cx="11" cy="11" r="2"></circle></svg>
 );
 const IconEdit2 = ({ size = 20, className = "" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
@@ -79,7 +75,7 @@ const firebaseConfig = {
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
-export let db;
+let db;
 try {
   db = initializeFirestore(firebaseApp, {
     localCache: persistentLocalCache()
@@ -1255,7 +1251,6 @@ const MainApp = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
-  const [activeScreen, setActiveScreen] = useState('main'); // 'main' | 'notes'
   const [viewMode, setViewMode] = useState('schedule'); // 'schedule' | 'todo'
   const [sortBy, setSortBy] = useState('time');
   
@@ -1729,22 +1724,13 @@ User said: "${transcript}"`
               </button>
               <div className="w-px h-5 bg-[#d6cfc7] mx-1 hidden sm:block"></div>
               {user.role === ROLES.PS_EDIT && (
-                <>
-                  <button 
-                    onClick={() => setActiveScreen(activeScreen === 'notes' ? 'main' : 'notes')}
-                    className={`p-2 rounded-lg transition-colors ${activeScreen === 'notes' ? 'bg-[#4a3b32] text-white' : 'text-[#7a6b63] hover:text-[#3a2e26] hover:bg-[#eae6e1]'}`}
-                    title="Notes"
-                  >
-                    <IconPenTool size={18} />
-                  </button>
-                  <button 
-                    onClick={() => openModal('#settings', setIsSettingsOpen)}
-                    className="p-2 text-[#7a6b63] hover:text-[#3a2e26] hover:bg-[#eae6e1] rounded-lg transition-colors"
-                    title="Settings"
-                  >
-                    <IconSettings size={18} />
-                  </button>
-                </>
+                <button 
+                  onClick={() => openModal('#settings', setIsSettingsOpen)}
+                  className="hidden sm:block p-2 text-[#7a6b63] hover:text-[#3a2e26] hover:bg-[#eae6e1] rounded-lg transition-colors"
+                  title="Settings"
+                >
+                  <IconSettings size={18} />
+                </button>
               )}
               <button 
                 onClick={() => openModal('#logout', setIsLogoutConfirmOpen)}
@@ -1757,12 +1743,7 @@ User said: "${transcript}"`
           </div>
         </header>
 
-        {activeScreen === 'notes' ? (
-          <main className="flex-1 w-full mx-auto print:hidden h-[calc(100vh-64px)] sm:h-auto overflow-hidden">
-             <NotesApp />
-          </main>
-        ) : (
-          <main className="flex-1 max-w-3xl w-full mx-auto px-4 pt-6 sm:pt-8 print:hidden">
+        <main className="flex-1 max-w-3xl w-full mx-auto px-4 pt-6 sm:pt-8 print:hidden">
           
           {/* Controls Bar */}
           <div className="flex justify-between items-center mb-4 h-10">
@@ -1803,11 +1784,10 @@ User said: "${transcript}"`
               </div>
             )}
           </div>
-          </main>
-        )}
+        </main>
 
         {/* Floating Action Buttons */}
-        {permissions.canAdd && activeScreen !== 'notes' && (
+        {permissions.canAdd && (
           <div className="fixed bottom-20 sm:bottom-8 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 z-40 print:hidden flex flex-col sm:flex-row gap-3">
             <div className="relative flex items-center justify-center">
               {isListening && (
@@ -1846,26 +1826,20 @@ User said: "${transcript}"`
         {/* Mobile Bottom Navigation */}
         <nav className="fixed bottom-0 w-full bg-white border-t border-stone-200 pb-safe sm:hidden z-30 print:hidden shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
           <div className="flex justify-around items-center h-16">
-            <button onClick={() => { window.scrollTo(0, 0); setActiveScreen('main'); setViewMode('schedule'); }} className={`flex flex-col items-center justify-center w-full h-full ${viewMode === 'schedule' && activeScreen === 'main' ? 'text-[#4a3b32]' : 'text-[#8a7f78] hover:text-[#3a2e26]'}`}>
+            <button onClick={() => { window.scrollTo(0, 0); setViewMode('schedule'); }} className={`flex flex-col items-center justify-center w-full h-full ${viewMode === 'schedule' ? 'text-[#4a3b32]' : 'text-[#8a7f78] hover:text-[#3a2e26]'}`}>
               <IconBookOpen size={20} className="mb-1" />
               <span className="text-[10px] font-semibold">Schedule</span>
             </button>
             {user.role === ROLES.PS_EDIT && (
-              <button onClick={() => { window.scrollTo(0, 0); setActiveScreen('main'); setViewMode('todo'); }} className={`flex flex-col items-center justify-center w-full h-full ${viewMode === 'todo' && activeScreen === 'main' ? 'text-[#4a3b32]' : 'text-[#8a7f78] hover:text-[#3a2e26]'}`}>
+              <button onClick={() => { window.scrollTo(0, 0); setViewMode('todo'); }} className={`flex flex-col items-center justify-center w-full h-full ${viewMode === 'todo' ? 'text-[#4a3b32]' : 'text-[#8a7f78] hover:text-[#3a2e26]'}`}>
                 <IconCheckCircle size={20} className="mb-1" />
                 <span className="text-[10px] font-semibold">To-Do</span>
               </button>
             )}
-            <button onClick={() => openModal('#calendar', setIsCalendarOpen)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26] hidden sm:flex">
+            <button onClick={() => openModal('#calendar', setIsCalendarOpen)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26]">
               <IconCalendar size={20} className="mb-1" />
               <span className="text-[10px] font-medium">Calendar</span>
             </button>
-            {user.role === ROLES.PS_EDIT && (
-              <button onClick={() => setActiveScreen('notes')} className={`flex flex-col items-center justify-center w-full h-full ${activeScreen === 'notes' ? 'text-[#4a3b32]' : 'text-[#8a7f78] hover:text-[#3a2e26]'}`}>
-                <IconPenTool size={20} className="mb-1" />
-                <span className="text-[10px] font-medium">Notes</span>
-              </button>
-            )}
             {user.role === ROLES.PS_EDIT && (
               <button onClick={() => openModal('#settings', setIsSettingsOpen)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26]">
                 <IconSettings size={20} className="mb-1" />
