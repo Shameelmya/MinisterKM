@@ -53,6 +53,11 @@ export default function NotesApp() {
     setSearchQuery('');
   };
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { type, id }
+
   const isCreatingFolderRef = useRef(isCreatingFolder);
   useEffect(() => {
     isCreatingFolderRef.current = isCreatingFolder;
@@ -77,11 +82,6 @@ export default function NotesApp() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [activeNote]);
-  
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // { type, id }
   
   const folderFormRef = React.useRef(null);
 
