@@ -1695,16 +1695,22 @@ User said: "${transcript}"`
                {user.role === ROLES.PS_EDIT && (
                  <div className="hidden sm:flex items-center bg-stone-100 p-1 rounded-full border border-stone-200">
                     <button 
-                      onClick={() => setViewMode('schedule')} 
-                      className={`px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-all ${viewMode === 'schedule' ? 'bg-white shadow-sm text-[#4a3b32]' : 'text-stone-500 hover:text-stone-700'}`}
+                      onClick={() => { setActiveScreen('main'); setViewMode('schedule'); }} 
+                      className={`px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-all ${viewMode === 'schedule' && activeScreen === 'main' ? 'bg-white shadow-sm text-[#4a3b32]' : 'text-stone-500 hover:text-stone-700'}`}
                     >
                       Schedule
                     </button>
                     <button 
-                      onClick={() => setViewMode('todo')} 
-                      className={`px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-all ${viewMode === 'todo' ? 'bg-white shadow-sm text-[#4a3b32]' : 'text-stone-500 hover:text-stone-700'}`}
+                      onClick={() => { setActiveScreen('main'); setViewMode('todo'); }} 
+                      className={`px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-all ${viewMode === 'todo' && activeScreen === 'main' ? 'bg-white shadow-sm text-[#4a3b32]' : 'text-stone-500 hover:text-stone-700'}`}
                     >
                       To Do
+                    </button>
+                    <button 
+                      onClick={() => setActiveScreen('notes')} 
+                      className={`px-3 py-1 text-[10px] sm:text-xs font-bold rounded-full transition-all ${activeScreen === 'notes' ? 'bg-white shadow-sm text-[#4a3b32]' : 'text-stone-500 hover:text-stone-700'}`}
+                    >
+                      Notes
                     </button>
                  </div>
                )}
@@ -1730,13 +1736,6 @@ User said: "${transcript}"`
               <div className="w-px h-5 bg-[#d6cfc7] mx-1 hidden sm:block"></div>
               {user.role === ROLES.PS_EDIT && (
                 <>
-                  <button 
-                    onClick={() => setActiveScreen(activeScreen === 'notes' ? 'main' : 'notes')}
-                    className={`hidden sm:block p-2 rounded-lg transition-colors ${activeScreen === 'notes' ? 'bg-[#4a3b32] text-white' : 'text-[#7a6b63] hover:text-[#3a2e26] hover:bg-[#eae6e1]'}`}
-                    title="Notes"
-                  >
-                    <IconPenTool size={18} />
-                  </button>
                   <button 
                     onClick={() => openModal('#settings', setIsSettingsOpen)}
                     className="hidden sm:block p-2 text-[#7a6b63] hover:text-[#3a2e26] hover:bg-[#eae6e1] rounded-lg transition-colors"
