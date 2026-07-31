@@ -1854,7 +1854,14 @@ User said: "${transcript}"`
         </nav>
 
         {/* Modals */}
-        <Modal isOpen={isAddOpen} onClose={() => closeModal('#add', setIsAddOpen)} title="New Entry">
+        <Modal isOpen={isAddOpen} onClose={() => closeModal('#add', setIsAddOpen)} title={
+          <div className="flex items-center gap-3">
+            <span>New Entry</span>
+            <span className="text-[13px] text-stone-500 font-medium px-2.5 py-1 bg-stone-100 rounded-lg">
+              {currentDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', weekday: 'long' })}
+            </span>
+          </div>
+        }>
           <ProgramForm onSubmit={handleAdd} onCancel={() => closeModal('#add', setIsAddOpen)} isSaving={isSaving} initialData={voicePrefill} />
         </Modal>
 
