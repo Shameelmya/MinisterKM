@@ -9,8 +9,28 @@ const renderDrawingThumbnail = (pathsStr) => {
   try {
     const paths = JSON.parse(pathsStr);
     if (!paths.length) return null;
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    paths.forEach(p => {
+       if (!p.points) return;
+       p.points.forEach(pt => {
+           if (pt.x < minX) minX = pt.x;
+           if (pt.x > maxX) maxX = pt.x;
+           if (pt.y < minY) minY = pt.y;
+           if (pt.y > maxY) maxY = pt.y;
+       });
+    });
+
+    if (minX === Infinity) return null;
+
+    const pad = 30;
+    minX -= pad;
+    minY -= pad;
+    const width = (maxX - minX) + pad * 2;
+    const height = (maxY - minY) + pad * 2;
+
     return (
-      <svg viewBox="0 0 1000 1000" className="w-full h-full object-cover opacity-60" preserveAspectRatio="xMidYMid slice">
+      <svg viewBox={`${minX} ${minY} ${width} ${height}`} className="w-full h-full opacity-60" preserveAspectRatio="xMidYMid meet">
         {paths.map((p, i) => {
           if (!p.points || p.points.length === 0) return null;
           let d = `M ${p.points[0].x} ${p.points[0].y}`;
@@ -487,9 +507,10 @@ export default function NotesApp() {
                     )}
                   </div>
                   
-                  <p className="text-[9px] text-stone-400 font-semibold uppercase absolute bottom-3 left-3 z-10">
-                    {note.updatedAt?.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </p>
+                  <div className="text-[9px] text-stone-400 font-semibold uppercase absolute bottom-3 left-3 z-10 flex items-center gap-1">
+                    {note.type === 'text' ? <IconType size={10} strokeWidth={3} /> : <IconPenLine size={10} strokeWidth={3} />}
+                    <span>{note.updatedAt?.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  </div>
                 </div>
               ))}
             </div>

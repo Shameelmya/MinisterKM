@@ -265,21 +265,24 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const handleTouch = (e) => {
+    const handleTouchStart = (e) => {
+      // Don't prevent default on start so two-finger scroll can initiate
+    };
+
+    const handleTouchMove = (e) => {
       if (mode === 'draw' && isEditing) {
         if (e.touches.length === 1) {
-          e.preventDefault(); // Stop scrolling, allow drawing
+          e.preventDefault(); // Stop scrolling for single-finger draw
         }
-        // Multi-touch allows browser default scrolling
       }
     };
 
-    canvas.addEventListener('touchstart', handleTouch, { passive: false });
-    canvas.addEventListener('touchmove', handleTouch, { passive: false });
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
 
     return () => {
-      canvas.removeEventListener('touchstart', handleTouch);
-      canvas.removeEventListener('touchmove', handleTouch);
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
     };
   }, [mode, isEditing]);
 
