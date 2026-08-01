@@ -471,7 +471,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
           ) : (
             <div className="flex items-center justify-between gap-1 shrink-0 w-full px-1 py-1 overflow-x-auto no-scrollbar">
               {/* Colors (left) */}
-              <div className="flex items-center gap-2 sm:gap-3 border-r border-stone-200/60 pr-3 sm:pr-4 shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3 border-r border-stone-200/60 pl-1 sm:pl-2 pr-3 sm:pr-4 shrink-0">
                 {drawTool === 'highlighter' ? (
                   Object.values(HIGHLIGHT_COLORS).map(c => (
                     <button 
@@ -494,7 +494,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
               </div>
               
               {/* Draw Tools (center) */}
-              <div className="flex items-center gap-1 border-r border-stone-200/60 px-2 sm:px-4 shrink-0">
+              <div className="flex items-center gap-1 border-r border-stone-200/60 pl-3 pr-1 sm:pl-5 sm:pr-2 shrink-0">
                 <button onClick={() => { setDrawTool('pen'); setDrawColor(COLORS.black); }} className={`p-1.5 sm:p-2 rounded-xl transition-all ${drawTool === 'pen' ? 'bg-stone-800 text-white shadow-md scale-105' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800'}`} title="Pen">
                   <IconPenLine size={18} />
                 </button>
