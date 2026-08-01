@@ -507,7 +507,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
               </div>
               
               {/* Thickness (right) */}
-              <div className="flex items-center justify-end gap-2.5 sm:gap-4 shrink-0 px-2 flex-1">
+              <div className="flex items-center justify-end gap-1 sm:gap-3 shrink-0 px-1 flex-1">
                 {[SIZES.thin, SIZES.medium, SIZES.thick, SIZES.extraThick].map((s, i) => (
                   <button 
                     key={s}
