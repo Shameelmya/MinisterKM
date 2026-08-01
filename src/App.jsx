@@ -1255,9 +1255,17 @@ const MainApp = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
-  const [activeScreen, setActiveScreen] = useState('main');
-  const [viewMode, setViewMode] = useState('schedule'); // 'schedule' | 'todo'
+  const [activeScreen, setActiveScreen] = useState(() => localStorage.getItem('shaji_activeScreen') || 'main');
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('shaji_viewMode') || 'schedule'); // 'schedule' | 'todo'
   const [sortBy, setSortBy] = useState('time');
+  
+  useEffect(() => {
+    localStorage.setItem('shaji_activeScreen', activeScreen);
+  }, [activeScreen]);
+
+  useEffect(() => {
+    localStorage.setItem('shaji_viewMode', viewMode);
+  }, [viewMode]);
   
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editProgram, setEditProgram] = useState(null);

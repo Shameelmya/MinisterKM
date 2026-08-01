@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PenTool as IconPenTool, Eraser as IconEraser, Type as IconType, Highlighter as IconHighlighter, ArrowLeft as IconArrowLeft, Trash2 as IconTrash2, Link2 as IconLink2, X as IconX, ChevronRight as IconChevronRight, Undo as IconUndo, Redo as IconRedo, Bold as IconBold, Italic as IconItalic, Underline as IconUnderline, List as IconList } from 'lucide-react';
+import { PenTool as IconPenTool, Eraser as IconEraser, Type as IconType, Highlighter as IconHighlighter, ArrowLeft as IconArrowLeft, Trash2 as IconTrash2, Link2 as IconLink2, X as IconX, ChevronRight as IconChevronRight, Undo as IconUndo, Redo as IconRedo, Bold as IconBold, Italic as IconItalic, Underline as IconUnderline, List as IconList, ListOrdered as IconListOrdered } from 'lucide-react';
 
 const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
@@ -121,8 +121,14 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.height = '100%';
     return () => {
       document.body.style.overflow = 'auto';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
     };
   }, []);
 
@@ -380,7 +386,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
       <div className="bg-white border-b border-stone-100 px-4 py-2 flex items-center z-10 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] shrink-0 overflow-x-auto no-scrollbar">
         {/* Dynamic Tools based on Note Type */}
         {mode === 'text' ? (
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full">
+          <div className="flex items-center justify-end gap-2 overflow-x-auto no-scrollbar w-full">
             <button onClick={() => execCmd('bold')} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bold">
               <IconBold size={18} strokeWidth={2.5} />
             </button>
@@ -393,6 +399,9 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
             <div className="w-px h-5 bg-stone-200 mx-1 shrink-0"></div>
             <button onClick={() => execCmd('insertUnorderedList')} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bullet List">
               <IconList size={18} strokeWidth={2.5} />
+            </button>
+            <button onClick={() => execCmd('insertOrderedList')} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Numbered List">
+              <IconListOrdered size={18} strokeWidth={2.5} />
             </button>
             <div className="w-px h-5 bg-stone-200 mx-1 shrink-0"></div>
             <button onClick={toggleHighlight} className="p-2 text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 rounded-lg shrink-0 transition-colors" title="Highlight">
