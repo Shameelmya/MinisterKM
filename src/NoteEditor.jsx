@@ -434,18 +434,18 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
            {isEditing && (
              <>
                {mode === 'draw' && paths.length > 0 && (
-                 <button onClick={() => setClearConfirm(true)} className="px-4 py-1.5 mr-2 text-sm font-bold text-red-500 bg-red-50 rounded-full hover:bg-red-100 transition-colors active:scale-95 shadow-sm border border-red-100" title="Clear Canvas">Clear</button>
+                 <button onClick={() => setClearConfirm(true)} className="px-3 py-1 mr-2 text-xs font-bold text-red-500 bg-red-50 rounded-full hover:bg-red-100 transition-colors active:scale-95 shadow-sm border border-red-100" title="Clear Canvas">Clear</button>
                )}
-               <button onClick={handleUndo} className="p-2.5 text-stone-500 hover:text-stone-900 bg-stone-50 hover:bg-stone-100 rounded-full transition-colors active:scale-95 shadow-sm border border-stone-100" title="Undo">
-                 <IconUndo size={20} />
+               <button onClick={handleUndo} className="p-2 text-stone-500 hover:text-stone-900 bg-stone-50 hover:bg-stone-100 rounded-full transition-colors active:scale-95 shadow-sm border border-stone-100" title="Undo">
+                 <IconUndo size={18} />
                </button>
-               <button onClick={handleRedo} className="p-2.5 text-stone-500 hover:text-stone-900 bg-stone-50 hover:bg-stone-100 rounded-full transition-colors active:scale-95 shadow-sm border border-stone-100" title="Redo">
-                 <IconRedo size={20} />
+               <button onClick={handleRedo} className="p-2 text-stone-500 hover:text-stone-900 bg-stone-50 hover:bg-stone-100 rounded-full transition-colors active:scale-95 shadow-sm border border-stone-100" title="Redo">
+                 <IconRedo size={18} />
                </button>
              </>
            )}
-           <button onClick={handleEditToggle} className={`p-3 ml-2 rounded-full transition-colors active:scale-95 shadow-sm border ${isEditing ? 'text-white bg-green-500 hover:bg-green-600 border-green-600' : 'text-stone-600 bg-white hover:bg-stone-50 border-stone-200'}`} title={isEditing ? "Finish Editing" : "Edit Note"}>
-             {isEditing ? <IconCheck size={24} strokeWidth={3} /> : <IconEdit2 size={24} />}
+           <button onClick={handleEditToggle} className={`p-2.5 ml-2 rounded-full transition-colors active:scale-95 shadow-sm border ${isEditing ? 'text-white bg-green-500 hover:bg-green-600 border-green-600' : 'text-stone-600 bg-white hover:bg-stone-50 border-stone-200'}`} title={isEditing ? "Finish Editing" : "Edit Note"}>
+             {isEditing ? <IconCheck size={20} strokeWidth={3} /> : <IconEdit2 size={20} />}
            </button>
         </div>
       </div>
@@ -478,9 +478,9 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
               </button>
             </div>
           ) : (
-            <div className="flex items-center justify-between gap-2 shrink-0 w-full px-2 py-1 overflow-hidden">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0 w-full px-2 py-1 overflow-x-auto no-scrollbar">
               {/* Colors (left) */}
-              <div className="flex items-center gap-2 border-r border-stone-200/60 pr-2 sm:pr-4 shrink-0">
+              <div className="flex items-center gap-3 sm:gap-4 border-r border-stone-200/60 pr-4 sm:pr-6 shrink-0">
                 {drawTool === 'highlighter' ? (
                   Object.values(HIGHLIGHT_COLORS).map(c => (
                     <button 
@@ -503,27 +503,28 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
               </div>
               
               {/* Draw Tools (center) */}
-              <div className="flex items-center gap-1.5 border-r border-stone-200/60 pr-2 sm:pr-4 shrink-0">
+              <div className="flex items-center gap-1.5 border-r border-stone-200/60 pl-2 pr-4 sm:pr-6 shrink-0">
                 <button onClick={() => { setDrawTool('pen'); setDrawColor(COLORS.black); }} className={`p-2 rounded-xl transition-all ${drawTool === 'pen' ? 'bg-stone-800 text-white shadow-md scale-105' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800'}`} title="Pen">
-                  <IconPenLine size={20} />
+                  <IconPenLine size={18} />
                 </button>
                 <button onClick={() => { setDrawTool('highlighter'); setDrawColor(HIGHLIGHT_COLORS.yellow); }} className={`p-2 rounded-xl transition-all ${drawTool === 'highlighter' ? 'bg-yellow-100 text-yellow-700 shadow-sm scale-105 ring-1 ring-yellow-400' : 'text-stone-500 hover:bg-stone-100 hover:text-yellow-600'}`} title="Highlighter">
-                  <IconHighlighter size={20} />
+                  <IconHighlighter size={18} />
                 </button>
                 <button onClick={() => setDrawTool('eraser')} className={`p-2 rounded-xl transition-all ${drawTool === 'eraser' ? 'bg-stone-200 text-stone-800 shadow-sm scale-105 ring-1 ring-stone-300' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800'}`} title="Eraser">
-                  <IconEraser size={20} />
+                  <IconEraser size={18} />
                 </button>
               </div>
               
               {/* Thickness (right) */}
-              <div className="flex items-center justify-end gap-3 sm:gap-4 shrink-0 px-2 flex-1">
+              <div className="flex items-center justify-end gap-4 sm:gap-5 shrink-0 px-3 flex-1">
                 {[SIZES.thin, SIZES.medium, SIZES.thick].map((s, i) => (
                   <button 
                     key={s}
                     onClick={() => setDrawSize(s)}
-                    className={`rounded-full transition-all flex items-center justify-center ${drawSize === s ? 'bg-stone-900 ring-2 ring-stone-300 ring-offset-2 scale-110' : 'bg-stone-300 hover:bg-stone-400'}`}
-                    style={{ width: 6 + (i*3), height: 6 + (i*3) }}
-                  />
+                    className={`w-6 h-6 rounded-full transition-all flex items-center justify-center border ${drawSize === s ? 'border-stone-400 bg-stone-100 shadow-sm scale-110' : 'border-transparent hover:bg-stone-100'}`}
+                  >
+                    <div className={`${drawTool === 'eraser' ? 'border-[1.5px] border-stone-400 bg-white' : 'bg-stone-800'} rounded-full`} style={{ width: 4 + (i*4), height: 4 + (i*4) }} />
+                  </button>
                 ))}
               </div>
             </div>
