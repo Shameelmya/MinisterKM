@@ -371,29 +371,40 @@ export default function NotesApp() {
         {displayedFolders.length > 0 && (
           <div className="mb-8">
             {!searchQuery && <h3 className="text-sm font-semibold text-gray-500 mb-3 px-1">Folders</h3>}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 sm:gap-4">
               {displayedFolders.map(folder => (
                 <div 
                   key={folder.id} 
                   onClick={() => navigateToFolder(folder.id)}
-                  className="group cursor-pointer relative pt-3"
+                  className="relative select-none cursor-pointer active:scale-95 transition-transform group bg-transparent w-full aspect-[4/3]"
                 >
-                  {/* Folder Tab Background */}
-                  <div className="absolute top-0 right-3 sm:right-6 w-1/2 h-8 bg-stone-300 rounded-t-2xl transition-colors group-hover:bg-[#d4cfc9]"></div>
+                  <svg width="100%" height="100%" viewBox="0 0 200 150" className="absolute inset-0" style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.06))' }}>
+                    {/* Back Colored Tab */}
+                    <path 
+                      d="M 85 8 L 155 8 Q 165 8 172 15 L 181 24 Q 186 29 186 36 L 186 50 L 85 50 Z" 
+                      fill="#e7e5e4" 
+                      className="transition-colors group-hover:fill-[#d6d3d1]"
+                    />
+                    {/* Front White Folder Body */}
+                    <path 
+                      d="M 0 22 A 22 22 0 0 1 22 0 L 70 0 Q 77 0 82 5 L 100 23 Q 105 28 112 28 L 178 28 A 22 22 0 0 1 200 50 L 200 128 A 22 22 0 0 1 178 150 L 22 150 A 22 22 0 0 1 0 128 Z" 
+                      fill="#ffffff" 
+                    />
+                  </svg>
                   
-                  {/* Folder Body */}
-                  <div className="bg-white rounded-2xl rounded-tr-none p-4 shadow-sm border border-stone-100 group-hover:shadow-md transition-all relative z-10 flex flex-col justify-between h-[120px]">
-                     <div className="flex flex-col">
-                       <span className="text-3xl font-light text-stone-400 leading-none mb-2">{notes.filter(n => n.folderId === folder.id).length}</span>
-                       <h4 className="font-semibold text-stone-800 text-sm line-clamp-1">{folder.name}</h4>
-                     </div>
-                     <button 
-                       onClick={(e) => promptDeleteFolder(e, folder.id)}
-                       className="absolute top-2 right-2 p-1.5 bg-stone-50 rounded-full text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 hover:bg-red-50"
-                     >
-                       <IconTrash2 size={14} />
-                     </button>
+                  <div className="absolute inset-0 px-4 pb-3 pt-3 md:px-5 md:pb-4 md:pt-4 flex flex-col justify-between pointer-events-none">
+                    <span className="text-[15px] md:text-[17px] font-medium text-stone-400 tracking-tight shrink-0">{notes.filter(n => n.folderId === folder.id).length}</span>
+                    <span className="text-[13px] font-semibold md:font-medium text-stone-800 leading-snug line-clamp-2 break-words shrink-0">
+                      {folder.name}
+                    </span>
                   </div>
+                  
+                  <button 
+                    onClick={(e) => promptDeleteFolder(e, folder.id)}
+                    className="absolute top-2 right-2 p-1.5 bg-stone-50 rounded-full text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 hover:bg-red-50 z-10"
+                  >
+                    <IconTrash2 size={14} />
+                  </button>
                 </div>
               ))}
             </div>
@@ -415,42 +426,39 @@ export default function NotesApp() {
               <p className="text-stone-500 text-sm mb-6">Create a new note or folder to get started.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 sm:gap-4">
               {displayedNotes.map(note => (
                 <div 
                   key={note.id} 
                   onClick={() => openExistingNote(note)}
-                  className="bg-white p-4 rounded-3xl shadow-sm hover:shadow-md transition-all cursor-pointer relative group border border-transparent hover:border-stone-100 flex flex-col justify-between h-[180px]"
+                  className="bg-white rounded-[20px] p-3 pb-8 shadow-[0_2px_8px_rgba(0,0,0,0.04)] aspect-[4/4.5] relative select-none cursor-pointer active:scale-95 transition-transform flex flex-col border border-black/5 group"
                 >
                   <button 
                     onClick={(e) => promptDeleteNote(e, note.id)}
-                    className="absolute top-3 right-3 p-1.5 z-20 bg-stone-100/80 backdrop-blur rounded-full text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 hover:bg-red-50"
+                    className="absolute top-2 right-2 p-1.5 z-20 bg-stone-100/80 backdrop-blur rounded-full text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 hover:bg-red-50"
                   >
                     <IconTrash2 size={14} />
                   </button>
-                  <div className="flex-1 overflow-hidden flex flex-col relative">
-                    <h4 className="font-bold text-gray-800 text-[15px] leading-tight mb-2 line-clamp-2 shrink-0 z-10 relative">
-                      {note.title || 'Untitled'}
-                    </h4>
-                    
-                    <div className="flex-1 overflow-hidden relative w-full h-full">
-                      {note.type === 'draw' ? (
-                        <div className="absolute -inset-4 top-0 bg-stone-50/30 rounded-b-3xl pointer-events-none flex items-center justify-center overflow-hidden z-0">
-                           {renderDrawingThumbnail(note.drawingPaths)}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-gray-500 line-clamp-5 leading-relaxed whitespace-pre-wrap relative z-10">
-                          {note.textContent || "No text..."}
-                        </p>
-                      )}
-                    </div>
+
+                  <h3 className="font-bold text-stone-800 text-xs line-clamp-1 mb-1 shrink-0 z-10 relative">
+                    {note.title || 'Untitled'}
+                  </h3>
+                  
+                  <div className="flex-1 overflow-hidden relative w-full h-full">
+                    {note.type === 'draw' ? (
+                      <div className="absolute -inset-4 top-0 bg-stone-50/30 rounded-b-[20px] pointer-events-none flex items-center justify-center overflow-hidden z-0">
+                         {renderDrawingThumbnail(note.drawingPaths)}
+                      </div>
+                    ) : (
+                      <p className="text-stone-500 text-[10px] leading-relaxed line-clamp-4 overflow-hidden break-words relative z-10">
+                        {note.textContent || "No text..."}
+                      </p>
+                    )}
                   </div>
                   
-                  <div className="mt-2 pt-2 flex items-center justify-between shrink-0 z-10 relative">
-                    <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">
-                      {note.updatedAt?.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
+                  <p className="text-[9px] text-stone-400 font-semibold uppercase absolute bottom-3 left-3 z-10">
+                    {note.updatedAt?.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </p>
                 </div>
               ))}
             </div>
