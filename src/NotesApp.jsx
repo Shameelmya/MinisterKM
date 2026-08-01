@@ -90,7 +90,10 @@ export default function NotesApp() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  
   const [deleteConfirm, setDeleteConfirm] = useState(null); // { type, id }
+  const [renameFolder, setRenameFolder] = useState(null); // folder object
+  const [renameValue, setRenameValue] = useState('');
 
   const isCreatingFolderRef = useRef(isCreatingFolder);
   useEffect(() => {
@@ -174,7 +177,28 @@ export default function NotesApp() {
     setDeleteConfirm({ type: 'folder', id: folderId });
   };
 
+  const promptRenameFolder = (e, folder) => {
+    e.stopPropagation();
+    setRenameFolder(folder);
+    setRenameValue(folder.name);
+  };
+
+  const handleRenameFolderSubmit = async (e) => {
+    e.preventDefault();
+    if (!renameValue.trim() || !renameFolder) return;
+    try {
+      await updateDoc(doc(db, 'folders', renameFolder.id), {
+        name: renameValue.trim()
+      });
+      setRenameFolder(null);
+    } catch (error) {
+      alert("Error renaming folder: " + error.message);
+    }
+  };
+
   const confirmDeleteFolder = async (folderId) => {
+    const tempId = folderId;
+    setDeleteConfirm(null);
     const getAllFolderIdsToDelete = (fId) => {
       let ids = [fId];
       const children = folders.filter(f => f.parentId === fId);
@@ -184,7 +208,7 @@ export default function NotesApp() {
       return ids;
     };
     
-    const folderIdsToDelete = getAllFolderIdsToDelete(folderId);
+    const folderIdsToDelete = getAllFolderIdsToDelete(tempId);
     
     for (const id of folderIdsToDelete) {
       const folderNotes = notes.filter(n => n.folderId === id);
@@ -197,10 +221,9 @@ export default function NotesApp() {
     if (folderIdsToDelete.includes(activeFolderId)) {
       setActiveFolderId(null);
     }
-    setDeleteConfirm(null);
   };
 
-  const handleCreateNote = async (startMode = 'type') => {
+  const handleCreateNote = (startMode = 'type') => {
     const noteType = startMode === 'type' ? 'text' : 'draw';
     const newNote = {
       folderId: activeFolderId,
@@ -212,15 +235,14 @@ export default function NotesApp() {
       updatedAt: serverTimestamp(),
       createdAt: serverTimestamp()
     };
-    try {
-      const docRef = await addDoc(collection(db, 'notes'), newNote);
-      setInitialModeForNewNote(startMode);
-      const depth = getFolderPath(activeFolderId).length + 1;
-      window.history.pushState({ noteOpen: true, depth }, '');
-      setActiveNote({ id: docRef.id, ...newNote });
-    } catch (error) {
-      alert("Error creating note: " + error.message);
-    }
+    
+    const newDocRef = doc(collection(db, 'notes'));
+    setDoc(newDocRef, newNote); // non-blocking write
+    
+    setInitialModeForNewNote(startMode);
+    const depth = getFolderPath(activeFolderId).length + 1;
+    window.history.pushState({ noteOpen: true, depth }, '');
+    setActiveNote({ id: newDocRef.id, ...newNote });
   };
 
   const handleSaveNote = async (noteData) => {
@@ -242,10 +264,11 @@ export default function NotesApp() {
   };
 
   const confirmDeleteNote = async (noteId) => {
+    const tempId = noteId;
+    setDeleteConfirm(null);
     try {
-      await deleteDoc(doc(db, 'notes', noteId));
-      if (activeNote && activeNote.id === noteId) setActiveNote(null);
-      setDeleteConfirm(null);
+      await deleteDoc(doc(db, 'notes', tempId));
+      if (activeNote && activeNote.id === tempId) setActiveNote(null);
     } catch (error) {
       alert("Error deleting note: " + error.message);
     }
@@ -399,12 +422,20 @@ export default function NotesApp() {
                     </span>
                   </div>
                   
-                  <button 
-                    onClick={(e) => promptDeleteFolder(e, folder.id)}
-                    className="absolute top-2 right-2 p-1.5 bg-stone-50 rounded-full text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 hover:bg-red-50 z-10"
-                  >
-                    <IconTrash2 size={14} />
-                  </button>
+                  <div className="absolute top-2 right-2 flex flex-col gap-1.5 z-10">
+                    <button 
+                      onClick={(e) => promptRenameFolder(e, folder)}
+                      className="p-1.5 bg-stone-50 rounded-full text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-stone-700 hover:bg-stone-200"
+                    >
+                      <IconEdit3 size={14} />
+                    </button>
+                    <button 
+                      onClick={(e) => promptDeleteFolder(e, folder.id)}
+                      className="p-1.5 bg-stone-50 rounded-full text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 hover:bg-red-50"
+                    >
+                      <IconTrash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -514,6 +545,33 @@ export default function NotesApp() {
         </div>
       </Modal>
 
+      <Modal isOpen={!!renameFolder} onClose={() => setRenameFolder(null)} title="Rename Folder">
+        <form onSubmit={handleRenameFolderSubmit}>
+          <input 
+            type="text" 
+            autoFocus
+            value={renameValue}
+            onChange={e => setRenameValue(e.target.value)}
+            className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl outline-none text-base focus:border-[#4a3b32] focus:ring-2 focus:ring-[#4a3b32]/20 mb-6"
+          />
+          <div className="flex gap-3 justify-end">
+            <button 
+              type="button"
+              onClick={() => setRenameFolder(null)}
+              className="px-5 py-2.5 rounded-xl font-medium text-stone-600 hover:bg-stone-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit"
+              disabled={!renameValue.trim()}
+              className="px-5 py-2.5 rounded-xl font-medium text-white bg-[#4a3b32] hover:bg-[#3a2e26] disabled:opacity-50 transition-colors"
+            >
+              Save
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

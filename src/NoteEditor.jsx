@@ -22,25 +22,21 @@ const Modal = ({ isOpen, onClose, title, children }) => {
 };
 
 const COLORS = {
-  black: '#000000',
-  blue: '#007AFF', // iOS Blue
-  green: '#34C759', // iOS Green
-  red: '#FF3B30', // iOS Red
-  yellow: '#FFCC00' // iOS Yellow
+  black: '#1c1917',
+  red: '#ef4444',
+  blue: '#3b82f6',
+  green: '#22c55e',
+  yellow: '#eab308'
 };
 
 const HIGHLIGHT_COLORS = {
-  yellow: '#FFEE58',
-  pink: '#F48FB1',
-  blue: '#81D4FA',
-  grey: '#CFD8DC'
+  yellow: 'rgba(250, 204, 21, 0.4)',
+  pink: 'rgba(244, 114, 182, 0.4)',
+  blue: 'rgba(96, 165, 250, 0.4)',
+  green: 'rgba(74, 222, 128, 0.4)'
 };
 
-const SIZES = {
-  thin: 1.5,
-  medium: 3,
-  thick: 6
-};
+const SIZES = { thin: 1.5, medium: 3, thick: 6, extraThick: 10 };
 
 const renderPathsToCanvas = (ctx, paths) => {
   paths.forEach(p => {
@@ -379,12 +375,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
       return;
     }
     
-    isForceExitingRef.current = true;
-    if (isEditing && !isNewNote) {
-       window.history.go(-2); 
-    } else {
-       window.history.back(); 
-    }
+    window.history.back(); 
   };
 
   const handleBreadcrumbClick = (targetDepth) => {
@@ -404,7 +395,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
   };
 
   return (
-    <div className="flex flex-col h-full bg-white z-50 fixed inset-0 overscroll-none">
+    <div className="flex flex-col bg-white z-[9999] fixed top-0 left-0 right-0 bottom-0 w-full h-[100dvh] sm:h-[100vh] overscroll-none" style={{ position: 'fixed' }}>
       {/* iOS Style Header */}
       <div className="bg-white/80 backdrop-blur-md border-b border-stone-200/50 px-2 py-3 flex items-center justify-between z-20 shrink-0 safe-top">
         <div className="flex items-center gap-1 flex-1 overflow-x-auto no-scrollbar mask-edges pr-4">
@@ -456,24 +447,24 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
           {/* Dynamic Tools based on Note Type */}
           {mode === 'text' ? (
             <div className="flex items-center justify-end gap-1 sm:gap-2 overflow-x-auto no-scrollbar w-full">
-              <button onPointerDown={(e) => { e.preventDefault(); execCmd('bold'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bold">
+              <button onMouseDown={e => e.preventDefault()} onTouchStart={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('bold'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bold">
                 <IconBold size={18} strokeWidth={2.5} />
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); execCmd('italic'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Italic">
+              <button onMouseDown={e => e.preventDefault()} onTouchStart={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('italic'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Italic">
                 <IconItalic size={18} strokeWidth={2.5} />
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); execCmd('underline'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Underline">
+              <button onMouseDown={e => e.preventDefault()} onTouchStart={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('underline'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Underline">
                 <IconUnderline size={18} strokeWidth={2.5} />
               </button>
               <div className="w-px h-5 bg-stone-200 mx-1 shrink-0"></div>
-              <button onPointerDown={(e) => { e.preventDefault(); execCmd('insertUnorderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bullet List">
+              <button onMouseDown={e => e.preventDefault()} onTouchStart={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('insertUnorderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bullet List">
                 <IconList size={18} strokeWidth={2.5} />
               </button>
-              <button onPointerDown={(e) => { e.preventDefault(); execCmd('insertOrderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Numbered List">
+              <button onMouseDown={e => e.preventDefault()} onTouchStart={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('insertOrderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Numbered List">
                 <IconListOrdered size={18} strokeWidth={2.5} />
               </button>
               <div className="w-px h-5 bg-stone-200 mx-1 shrink-0"></div>
-              <button onPointerDown={(e) => { e.preventDefault(); toggleHighlight(); }} className="p-2 text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 rounded-lg shrink-0 transition-colors" title="Highlight">
+              <button onMouseDown={e => e.preventDefault()} onTouchStart={e => e.preventDefault()} onClick={e => { e.preventDefault(); toggleHighlight(); }} className="p-2 text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 rounded-lg shrink-0 transition-colors" title="Highlight">
                 <IconHighlighter size={18} strokeWidth={2.5} />
               </button>
             </div>
@@ -517,7 +508,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
               
               {/* Thickness (right) */}
               <div className="flex items-center justify-end gap-2.5 sm:gap-4 shrink-0 px-2 flex-1">
-                {[SIZES.thin, SIZES.medium, SIZES.thick].map((s, i) => (
+                {[SIZES.thin, SIZES.medium, SIZES.thick, SIZES.extraThick].map((s, i) => (
                   <button 
                     key={s}
                     onClick={() => setDrawSize(s)}
