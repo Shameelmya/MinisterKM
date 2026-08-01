@@ -158,11 +158,37 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
   }, [onSave, onBack]);
 
   useEffect(() => {
+    const originalStyles = {
+      htmlOverflow: document.documentElement.style.overflow,
+      htmlPosition: document.documentElement.style.position,
+      htmlHeight: document.documentElement.style.height,
+      htmlWidth: document.documentElement.style.width,
+      bodyOverflow: document.body.style.overflow,
+      bodyPosition: document.body.style.position,
+      bodyHeight: document.body.style.height,
+      bodyWidth: document.body.style.width,
+    };
+
     document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.position = 'fixed';
+    document.documentElement.style.height = '100%';
+    document.documentElement.style.width = '100%';
+    
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.height = '100%';
+    document.body.style.width = '100%';
+
     return () => {
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
+      document.documentElement.style.overflow = originalStyles.htmlOverflow;
+      document.documentElement.style.position = originalStyles.htmlPosition;
+      document.documentElement.style.height = originalStyles.htmlHeight;
+      document.documentElement.style.width = originalStyles.htmlWidth;
+      
+      document.body.style.overflow = originalStyles.bodyOverflow;
+      document.body.style.position = originalStyles.bodyPosition;
+      document.body.style.height = originalStyles.bodyHeight;
+      document.body.style.width = originalStyles.bodyWidth;
     };
   }, []);
 
@@ -235,6 +261,28 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
     redrawCanvas();
   }, [paths]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleTouch = (e) => {
+      if (mode === 'draw' && isEditing) {
+        if (e.touches.length === 1) {
+          e.preventDefault(); // Stop scrolling, allow drawing
+        }
+        // Multi-touch allows browser default scrolling
+      }
+    };
+
+    canvas.addEventListener('touchstart', handleTouch, { passive: false });
+    canvas.addEventListener('touchmove', handleTouch, { passive: false });
+
+    return () => {
+      canvas.removeEventListener('touchstart', handleTouch);
+      canvas.removeEventListener('touchmove', handleTouch);
+    };
+  }, [mode, isEditing]);
+
   const execCmd = (cmd, val) => {
     document.execCommand(cmd, false, val);
     if (editorRef.current) editorRef.current.focus();
@@ -296,7 +344,8 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
   const startDrawing = (e) => {
     if (mode !== 'draw' || !isEditing) return;
     
-    e.preventDefault();
+    // Ignore multi-touch in pointer events so browser can handle scrolling
+    if (e.pointerType === 'touch' && !e.isPrimary) return;
     setIsDrawing(true);
     const coords = getCoordinates(e);
     
@@ -321,7 +370,8 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
 
   const draw = (e) => {
     if (!isDrawing || mode !== 'draw' || !isEditing) return;
-    e.preventDefault();
+    
+    if (e.pointerType === 'touch' && !e.isPrimary) return;
     const coords = getCoordinates(e);
 
     const actualSize = drawTool === 'eraser' 
@@ -447,24 +497,24 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
           {/* Dynamic Tools based on Note Type */}
           {mode === 'text' ? (
             <div className="flex items-center justify-end gap-1 sm:gap-2 overflow-x-auto no-scrollbar w-full">
-              <button onMouseDown={e => e.preventDefault()} onTouchStart={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('bold'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bold">
+              <button onPointerDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('bold'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bold">
                 <IconBold size={18} strokeWidth={2.5} />
               </button>
-              <button onMouseDown={e => e.preventDefault()} onTouchStart={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('italic'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Italic">
+              <button onPointerDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('italic'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Italic">
                 <IconItalic size={18} strokeWidth={2.5} />
               </button>
-              <button onMouseDown={e => e.preventDefault()} onTouchStart={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('underline'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Underline">
+              <button onPointerDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('underline'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Underline">
                 <IconUnderline size={18} strokeWidth={2.5} />
               </button>
               <div className="w-px h-5 bg-stone-200 mx-1 shrink-0"></div>
-              <button onMouseDown={e => e.preventDefault()} onTouchStart={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('insertUnorderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bullet List">
+              <button onPointerDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('insertUnorderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bullet List">
                 <IconList size={18} strokeWidth={2.5} />
               </button>
-              <button onMouseDown={e => e.preventDefault()} onTouchStart={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('insertOrderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Numbered List">
+              <button onPointerDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('insertOrderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Numbered List">
                 <IconListOrdered size={18} strokeWidth={2.5} />
               </button>
               <div className="w-px h-5 bg-stone-200 mx-1 shrink-0"></div>
-              <button onMouseDown={e => e.preventDefault()} onTouchStart={e => e.preventDefault()} onClick={e => { e.preventDefault(); toggleHighlight(); }} className="p-2 text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 rounded-lg shrink-0 transition-colors" title="Highlight">
+              <button onPointerDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); toggleHighlight(); }} className="p-2 text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 rounded-lg shrink-0 transition-colors" title="Highlight">
                 <IconHighlighter size={18} strokeWidth={2.5} />
               </button>
             </div>
@@ -527,7 +577,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
       <div 
         ref={containerRef}
         className="relative flex-1 overflow-auto bg-white"
-        style={{ touchAction: (mode === 'draw' && isEditing) ? 'none' : 'auto' }} 
+        style={{ touchAction: 'auto' }} 
       >
         <div className="max-w-3xl mx-auto w-full relative min-h-full">
             {/* Title Input */}
