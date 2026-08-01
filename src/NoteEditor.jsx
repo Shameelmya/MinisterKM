@@ -494,7 +494,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
               </div>
               
               {/* Draw Tools (center) */}
-              <div className="flex items-center gap-1 border-r border-stone-200/60 pl-1 pr-3 sm:pr-4 shrink-0">
+              <div className="flex items-center gap-1 border-r border-stone-200/60 px-2 sm:px-4 shrink-0">
                 <button onClick={() => { setDrawTool('pen'); setDrawColor(COLORS.black); }} className={`p-1.5 sm:p-2 rounded-xl transition-all ${drawTool === 'pen' ? 'bg-stone-800 text-white shadow-md scale-105' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800'}`} title="Pen">
                   <IconPenLine size={18} />
                 </button>
@@ -507,7 +507,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
               </div>
               
               {/* Thickness (right) */}
-              <div className="flex items-center justify-end gap-1 sm:gap-3 shrink-0 px-1 flex-1">
+              <div className="flex items-center justify-end gap-1 sm:gap-3 shrink-0 pl-2 sm:pl-4 pr-1 flex-1">
                 {[SIZES.thin, SIZES.medium, SIZES.thick, SIZES.extraThick].map((s, i) => (
                   <button 
                     key={s}
