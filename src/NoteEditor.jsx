@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PenLine as IconPenLine, Eraser as IconEraser, Type as IconType, Highlighter as IconHighlighter, ArrowLeft as IconArrowLeft, Trash2 as IconTrash2, Link2 as IconLink2, X as IconX, ChevronRight as IconChevronRight, Undo2 as IconUndo, Redo2 as IconRedo, Bold as IconBold, Italic as IconItalic, Underline as IconUnderline, List as IconList, ListOrdered as IconListOrdered, Edit2 as IconEdit2, Check as IconCheck } from 'lucide-react';
+import { PenLine as IconPenLine, Eraser as IconEraser, Type as IconType, Highlighter as IconHighlighter, ArrowLeft as IconArrowLeft, Trash2 as IconTrash2, Link2 as IconLink2, X as IconX, ChevronRight as IconChevronRight, ChevronUp as IconChevronUp, ChevronDown as IconChevronDown, Undo2 as IconUndo, Redo2 as IconRedo, Bold as IconBold, Italic as IconItalic, Underline as IconUnderline, List as IconList, ListOrdered as IconListOrdered, Edit2 as IconEdit2, Check as IconCheck } from 'lucide-react';
 
 const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
@@ -643,6 +643,28 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
           />
         )}
       </div>
+
+      {/* Floating Scroll Buttons for Drawing Canvas */}
+      {mode === 'draw' && isEditing && (
+        <div className="fixed right-3 sm:right-6 bottom-1/3 flex flex-col gap-3 z-[60] print:hidden">
+          <button 
+            onPointerDown={e => e.preventDefault()}
+            onClick={() => containerRef.current?.scrollBy({ top: -350, behavior: 'smooth' })}
+            className="w-11 h-11 bg-black/10 backdrop-blur-md rounded-full flex items-center justify-center text-stone-700 active:bg-black/20 hover:bg-black/15 transition-all shadow-sm border border-white/40"
+            title="Scroll Up"
+          >
+            <IconChevronUp size={24} strokeWidth={2.5} />
+          </button>
+          <button 
+            onPointerDown={e => e.preventDefault()}
+            onClick={() => containerRef.current?.scrollBy({ top: 350, behavior: 'smooth' })}
+            className="w-11 h-11 bg-black/10 backdrop-blur-md rounded-full flex items-center justify-center text-stone-700 active:bg-black/20 hover:bg-black/15 transition-all shadow-sm border border-white/40"
+            title="Scroll Down"
+          >
+            <IconChevronDown size={24} strokeWidth={2.5} />
+          </button>
+        </div>
+      )}
       
       {/* Modals */}
       <Modal isOpen={clearConfirm} onClose={() => setClearConfirm(false)} title="Clear all drawings?">
