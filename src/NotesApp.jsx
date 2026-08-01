@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
 import { db } from './App'; 
-import { Folder as IconFolder, FolderPlus as IconFolderPlus, Search as IconSearch, FileText as IconFileText, Trash2 as IconTrash2, PenTool as IconPenTool, Edit3 as IconEdit3, ChevronDown as IconChevronDown, X as IconX, ChevronRight as IconChevronRight, ArrowLeft as IconArrowLeft } from 'lucide-react';
+import { Folder as IconFolder, FolderPlus as IconFolderPlus, Search as IconSearch, FileText as IconFileText, Trash2 as IconTrash2, PenTool as IconPenTool, Edit3 as IconEdit3, ChevronDown as IconChevronDown, X as IconX, ChevronRight as IconChevronRight, ArrowLeft as IconArrowLeft, Type as IconType } from 'lucide-react';
 import NoteEditor from './NoteEditor';
 
 const Modal = ({ isOpen, onClose, title, children }) => {
@@ -167,8 +167,10 @@ export default function NotesApp() {
   };
 
   const handleCreateNote = async (startMode = 'type') => {
+    const noteType = startMode === 'type' ? 'text' : 'draw';
     const newNote = {
       folderId: activeFolderId,
+      type: noteType,
       title: '',
       textContent: '',
       richTextHTML: '',
@@ -216,7 +218,7 @@ export default function NotesApp() {
   };
 
   const openExistingNote = (note) => {
-    setInitialModeForNewNote('type'); // Default when opening
+    setInitialModeForNewNote(note.type === 'draw' ? 'draw' : 'type'); // Open in the correct mode based on note type
     const depth = getFolderPath(activeFolderId).length + 1;
     window.history.pushState({ noteOpen: true, depth }, '');
     setActiveNote(note);
@@ -412,25 +414,23 @@ export default function NotesApp() {
       </div>
 
       {/* Floating Action Buttons */}
-      <div className="fixed bottom-24 sm:bottom-8 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 z-40 print:hidden flex flex-col sm:flex-row gap-3 items-end sm:items-center justify-end">
-        {/* Handwriting Note FAB */}
-        <button 
-          onClick={() => handleCreateNote('draw')}
-          className="relative z-10 flex items-center justify-center gap-2 text-white shadow-lg shadow-red-600/30 transition-all duration-300 w-14 h-14 sm:w-auto sm:h-12 sm:px-6 rounded-full select-none bg-red-600 hover:bg-red-700 hover:-translate-y-1"
-          title="New Handwriting Note"
-        >
-          <IconEdit3 size={24} className="sm:w-5 sm:h-5" />
-          <span className="hidden sm:inline font-medium">Handwrite</span>
-        </button>
-        
-        {/* Standard Text Note FAB */}
+      <div className="fixed bottom-24 sm:bottom-12 right-6 z-40 print:hidden flex flex-col gap-4 items-center">
+        {/* Text Note FAB */}
         <button 
           onClick={() => handleCreateNote('type')}
-          className="flex items-center justify-center gap-2 bg-[#4a3b32] text-white shadow-lg shadow-[#4a3b32]/30 hover:shadow-xl hover:-translate-y-1 hover:bg-[#3a2e26] transition-all w-14 h-14 sm:w-auto sm:h-12 sm:px-6 rounded-full"
-          title="New Note"
+          className="flex items-center justify-center w-14 h-14 bg-white text-stone-700 shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.2)] rounded-full transition-all active:scale-95 border border-stone-100"
+          title="New Text Note"
         >
-          <IconPenTool size={24} className="sm:w-5 sm:h-5" />
-          <span className="hidden sm:inline font-medium">Add Note</span>
+          <IconType size={24} strokeWidth={2.5} />
+        </button>
+        
+        {/* Draw Note FAB */}
+        <button 
+          onClick={() => handleCreateNote('draw')}
+          className="flex items-center justify-center w-14 h-14 bg-[#4a3b32] text-white shadow-[0_8px_30px_rgba(74,59,50,0.3)] hover:shadow-[0_8px_30px_rgba(74,59,50,0.4)] hover:bg-[#3a2e26] rounded-full transition-all active:scale-95"
+          title="New Draw Note"
+        >
+          <IconPenTool size={24} />
         </button>
       </div>
       {/* Modals */}

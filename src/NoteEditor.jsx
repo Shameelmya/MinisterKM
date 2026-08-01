@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PenTool as IconPenTool, Eraser as IconEraser, Type as IconType, Highlighter as IconHighlighter, ArrowLeft as IconArrowLeft, Trash2 as IconTrash2, Link2 as IconLink2, X as IconX, ChevronRight as IconChevronRight } from 'lucide-react';
+import { PenTool as IconPenTool, Eraser as IconEraser, Type as IconType, Highlighter as IconHighlighter, ArrowLeft as IconArrowLeft, Trash2 as IconTrash2, Link2 as IconLink2, X as IconX, ChevronRight as IconChevronRight, Undo as IconUndo, Redo as IconRedo, Bold as IconBold, Italic as IconItalic, Underline as IconUnderline, List as IconList } from 'lucide-react';
 
 const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
@@ -30,9 +30,9 @@ const COLORS = {
 };
 
 const SIZES = {
-  thin: 2,
-  medium: 4,
-  thick: 8
+  thin: 1.5,
+  medium: 3,
+  thick: 6
 };
 
 const renderPathsToCanvas = (ctx, paths) => {
@@ -52,19 +52,31 @@ const renderPathsToCanvas = (ctx, paths) => {
     
     if (p.points.length > 0) {
       ctx.moveTo(p.points[0].x, p.points[0].y);
-      for (let i = 1; i < p.points.length; i++) {
-        ctx.lineTo(p.points[i].x, p.points[i].y);
+      if (p.points.length === 1) {
+         ctx.lineTo(p.points[0].x, p.points[0].y);
+      } else {
+         for (let i = 1; i < p.points.length - 1; i++) {
+            const pt = p.points[i];
+            const nextPt = p.points[i + 1];
+            const midX = (pt.x + nextPt.x) / 2;
+            const midY = (pt.y + nextPt.y) / 2;
+            ctx.quadraticCurveTo(pt.x, pt.y, midX, midY);
+         }
+         const last = p.points[p.points.length - 1];
+         ctx.lineTo(last.x, last.y);
       }
       ctx.stroke();
     }
   });
 };
 
-export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDelete, initialMode = 'type' }) {
-  const [mode, setMode] = useState(initialMode);
+export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDelete }) {
+  // Hardcoded mode based on note type. Never changes.
+  const mode = note?.type === 'draw' ? 'draw' : 'text';
+  
   const [drawTool, setDrawTool] = useState('pen'); 
   const [drawColor, setDrawColor] = useState(COLORS.black);
-  const [drawSize, setDrawSize] = useState(SIZES.medium);
+  const [drawSize, setDrawSize] = useState(SIZES.thin);
   
   const [title, setTitle] = useState(note?.title || '');
   const [htmlContent, setHtmlContent] = useState(note?.richTextHTML || '');
@@ -74,11 +86,12 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
   const containerRef = useRef(null);
   
   const [paths, setPaths] = useState(note?.drawingPaths ? JSON.parse(note.drawingPaths) : []);
+  const [undoStack, setUndoStack] = useState([]);
+  
   const [currentPath, setCurrentPath] = useState(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [clearConfirm, setClearConfirm] = useState(false);
 
-  // Reference to current state for popstate handler
   const stateRef = useRef({ title, htmlContent, paths, note });
   useEffect(() => {
     stateRef.current = { title, htmlContent, paths, note };
@@ -107,21 +120,36 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
   }, [onSave, onBack]);
 
   useEffect(() => {
-    // Lock body scroll to prevent Android/iOS from panning the entire viewport
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = 'auto';
     };
   }, []);
 
+  const getRequiredCanvasHeight = () => {
+    let max_y = 0;
+    paths.forEach(p => {
+       p.points.forEach(pt => {
+           if (pt.y > max_y) max_y = pt.y;
+       });
+    });
+    if (currentPath) {
+       currentPath.points.forEach(pt => {
+           if (pt.y > max_y) max_y = pt.y;
+       });
+    }
+    const windowH = typeof window !== 'undefined' ? window.innerHeight : 1000;
+    return Math.max(windowH, max_y + windowH); // Expand by a window height so there is always scroll room
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || mode !== 'draw') return;
     
     const resizeCanvas = () => {
       if (containerRef.current) {
         canvas.width = containerRef.current.offsetWidth;
-        canvas.height = Math.max(containerRef.current.offsetHeight, containerRef.current.scrollHeight);
+        canvas.height = getRequiredCanvasHeight();
         redrawCanvas();
       }
     };
@@ -138,11 +166,11 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
       window.removeEventListener('resize', resizeCanvas);
       observer.disconnect();
     };
-  }, []);
+  }, [mode, paths.length]); // Resize if new paths added (could increase height)
 
   const redrawCanvas = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || mode !== 'draw') return;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     renderPathsToCanvas(ctx, paths);
@@ -152,29 +180,37 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
     redrawCanvas();
   }, [paths]);
 
-  const formatLinks = () => {
-    if (!editorRef.current) return;
-    let html = editorRef.current.innerHTML;
-    
-    const tempHtml = html.replace(/<a [^>]+>(.*?)<\/a>/g, '%%LINK%%$1%%/LINK%%');
-    
-    let newHtml = tempHtml.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" class="text-[#4a3b32] underline font-semibold" contenteditable="false">$1</a>');
-    
-    newHtml = newHtml.replace(/(?<!\d)(?:\+91|0)?[6-9]\d{9}(?!\d)/g, (match) => {
-      return `<a href="tel:${match}" class="text-[#4a3b32] underline font-semibold" contenteditable="false">${match}</a>`;
-    });
-    
-    newHtml = newHtml.replace(/%%LINK%%(.*?)%%\/?LINK%%/g, '$1');
-    
-    if (html !== newHtml) {
-      editorRef.current.innerHTML = newHtml;
-      setHtmlContent(newHtml);
+  const execCmd = (cmd, val) => {
+    document.execCommand(cmd, false, val);
+    if (editorRef.current) editorRef.current.focus();
+  };
+
+  const toggleHighlight = () => {
+    // If hiliteColor is already yellow, how to unhighlight? 
+    // We can just set background color. It's tricky to toggle, so we'll just apply it.
+    // Ideally we apply transparent if already highlighted, but 'yellow' is a good start.
+    document.execCommand('hiliteColor', false, 'yellow');
+    if (editorRef.current) editorRef.current.focus();
+  };
+
+  const handleUndo = () => {
+    if (mode === 'text') {
+      execCmd('undo');
+    } else if (paths.length > 0) {
+      const p = paths[paths.length - 1];
+      setPaths(prev => prev.slice(0, -1));
+      setUndoStack(prev => [...prev, p]);
     }
   };
 
-  const execCmd = (cmd, val) => {
-    document.execCommand(cmd, false, val);
-    editorRef.current.focus();
+  const handleRedo = () => {
+    if (mode === 'text') {
+      execCmd('redo');
+    } else if (undoStack.length > 0) {
+      const p = undoStack[undoStack.length - 1];
+      setUndoStack(prev => prev.slice(0, -1));
+      setPaths(prev => [...prev, p]);
+    }
   };
 
   const getCoordinates = (e) => {
@@ -213,6 +249,8 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
         points: [coords]
       };
       setCurrentPath(newPath);
+      // Clear redo stack on new action
+      setUndoStack([]);
     }
   };
 
@@ -230,12 +268,17 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
       };
       setCurrentPath(newPath);
       
-      // Redraw everything to prevent highlighter overlapping at joints during fast drawing
+      // We dynamically redraw canvas for smoothness
       redrawCanvas();
-      
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
       renderPathsToCanvas(ctx, [newPath]);
+      
+      // Auto expand canvas height if near bottom
+      if (coords.y > canvas.height - 200) {
+         canvas.height += window.innerHeight;
+         redrawCanvas();
+      }
     }
   };
 
@@ -261,17 +304,14 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
   };
 
   const handleBackUI = () => {
-    // If the modal is open, just close the modal instead of going back
     if (clearConfirm) {
       setClearConfirm(false);
       return;
     }
     
-    // Check if the history state is what we expect
     if (window.history.state?.noteOpen) {
       window.history.back(); // This triggers popstate, which auto-saves
     } else {
-      // Fallback if somehow there's no state pushed
       const { title, paths, note } = stateRef.current;
       const currentHtml = editorRef.current?.innerHTML || '';
       const textContent = editorRef.current?.innerText || '';
@@ -324,53 +364,54 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
             </React.Fragment>
           ))}
         </div>
-        <div className="flex items-center justify-end gap-2 shrink-0 pr-2">
-          {note?.id && (
-            <button onClick={onDelete} className="p-2 text-stone-400 hover:text-red-500 rounded-full transition-colors">
-              <IconTrash2 size={22} />
-            </button>
-          )}
+        
+        {/* Undo/Redo Buttons replacing Delete */}
+        <div className="flex items-center justify-end gap-1 shrink-0 pr-2">
+           <button onClick={handleUndo} className="p-2 text-stone-400 hover:text-stone-800 rounded-full transition-colors active:scale-95" title="Undo">
+             <IconUndo size={22} />
+           </button>
+           <button onClick={handleRedo} className="p-2 text-stone-400 hover:text-stone-800 rounded-full transition-colors active:scale-95" title="Redo">
+             <IconRedo size={22} />
+           </button>
         </div>
       </div>
 
       {/* Tools Toolbar (Floating/Sticky) */}
-      <div className="bg-white border-b border-stone-100 px-4 py-2.5 flex items-center gap-4 z-10 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] shrink-0 overflow-x-auto no-scrollbar">
-        {/* Mode Toggle */}
-        <div className="flex bg-stone-100/80 p-1 rounded-xl shrink-0">
-          <button 
-            onClick={() => setMode('type')} 
-            className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'type' ? 'bg-white text-stone-800 shadow-sm scale-100' : 'text-stone-500 scale-95'}`}
-          >
-            <IconType size={18} /> <span className="hidden sm:inline">Type</span>
-          </button>
-          <button 
-            onClick={() => setMode('draw')} 
-            className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${mode === 'draw' ? 'bg-white text-stone-800 shadow-sm scale-100' : 'text-stone-500 scale-95'}`}
-          >
-            <IconPenTool size={18} /> <span className="hidden sm:inline">Draw</span>
-          </button>
-        </div>
-
-        {/* Dynamic Tools based on Mode */}
-        {mode === 'type' ? (
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar mask-edges">
-            <button onClick={() => execCmd('formatBlock', 'H1')} className="px-3 py-1.5 text-base font-bold text-stone-700 hover:bg-stone-50 rounded-lg">H1</button>
-            <button onClick={() => execCmd('formatBlock', 'H2')} className="px-3 py-1.5 text-base font-bold text-stone-700 hover:bg-stone-50 rounded-lg">H2</button>
-            <div className="w-px h-5 bg-stone-200 mx-1"></div>
-            <button onClick={() => execCmd('bold')} className="px-3 py-1.5 text-base font-bold text-stone-700 hover:bg-stone-50 rounded-lg">B</button>
-            <button onClick={() => execCmd('italic')} className="px-3 py-1.5 text-base italic font-serif text-stone-700 hover:bg-stone-50 rounded-lg">I</button>
-            <div className="w-px h-5 bg-stone-200 mx-1"></div>
-            <button onClick={formatLinks} className="px-3 py-1.5 text-[#4a3b32] hover:bg-stone-50 rounded-lg flex items-center gap-1" title="Linkify URLs & Phones">
-                <IconLink2 size={18} />
+      <div className="bg-white border-b border-stone-100 px-4 py-2 flex items-center z-10 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] shrink-0 overflow-x-auto no-scrollbar">
+        {/* Dynamic Tools based on Note Type */}
+        {mode === 'text' ? (
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full">
+            <button onClick={() => execCmd('bold')} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bold">
+              <IconBold size={18} strokeWidth={2.5} />
+            </button>
+            <button onClick={() => execCmd('italic')} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Italic">
+              <IconItalic size={18} strokeWidth={2.5} />
+            </button>
+            <button onClick={() => execCmd('underline')} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Underline">
+              <IconUnderline size={18} strokeWidth={2.5} />
+            </button>
+            <div className="w-px h-5 bg-stone-200 mx-1 shrink-0"></div>
+            <button onClick={() => execCmd('insertUnorderedList')} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bullet List">
+              <IconList size={18} strokeWidth={2.5} />
+            </button>
+            <div className="w-px h-5 bg-stone-200 mx-1 shrink-0"></div>
+            <button onClick={toggleHighlight} className="p-2 text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 rounded-lg shrink-0 transition-colors" title="Highlight">
+              <IconHighlighter size={18} strokeWidth={2.5} />
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-4 shrink-0 w-full overflow-x-auto no-scrollbar">
             {/* Draw Tools */}
             <div className="flex items-center bg-stone-50 p-1 rounded-xl border border-stone-100 shrink-0">
-              <button onClick={() => setDrawTool('pen')} className={`p-2 rounded-lg transition-colors ${drawTool === 'pen' ? 'bg-white shadow-sm text-stone-800' : 'text-stone-400'}`}><IconPenTool size={20}/></button>
-              <button onClick={() => setDrawTool('highlighter')} className={`p-2 rounded-lg transition-colors ${drawTool === 'highlighter' ? 'bg-white shadow-sm text-stone-800' : 'text-stone-400'}`}><IconHighlighter size={20}/></button>
-              <button onClick={() => setDrawTool('eraser')} className={`p-2 rounded-lg transition-colors ${drawTool === 'eraser' ? 'bg-white shadow-sm text-stone-800' : 'text-stone-400'}`}><IconEraser size={20}/></button>
+              <button onClick={() => setDrawTool('pen')} className={`p-2 rounded-lg transition-colors ${drawTool === 'pen' ? 'bg-white shadow-sm text-stone-800' : 'text-stone-400'}`} title="Pen">
+                <IconPenTool size={20} />
+              </button>
+              <button onClick={() => setDrawTool('highlighter')} className={`p-2 rounded-lg transition-colors ${drawTool === 'highlighter' ? 'bg-white shadow-sm text-yellow-600' : 'text-stone-400'}`} title="Highlighter">
+                <IconHighlighter size={20} />
+              </button>
+              <button onClick={() => setDrawTool('eraser')} className={`p-2 rounded-lg transition-colors ${drawTool === 'eraser' ? 'bg-white shadow-sm text-stone-800' : 'text-stone-400'}`} title="Eraser">
+                <IconEraser size={20} />
+              </button>
             </div>
             
             {/* Colors (only for pen) */}
@@ -403,7 +444,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
 
             {/* Clear All */}
             {paths.length > 0 && (
-                <button onClick={() => setClearConfirm(true)} className="text-sm font-semibold text-red-500 px-2 py-1 ml-auto shrink-0">Clear</button>
+                <button onClick={() => setClearConfirm(true)} className="text-sm font-semibold text-red-500 px-3 py-1.5 ml-auto shrink-0 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">Clear</button>
             )}
           </div>
         )}
@@ -429,10 +470,10 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
             {/* Layer 1: Text */}
             <div 
                 ref={editorRef}
-                contentEditable={mode === 'type'}
+                contentEditable={mode === 'text'}
                 suppressContentEditableWarning
                 onBlur={(e) => setHtmlContent(e.target.innerHTML)}
-                className="min-h-[500px] px-6 sm:px-10 pb-20 outline-none text-stone-800 leading-relaxed prose prose-stone max-w-none font-sans"
+                className={`min-h-[500px] px-6 sm:px-10 pb-20 outline-none text-stone-800 leading-relaxed prose prose-stone max-w-none font-sans ${mode === 'draw' ? 'hidden' : 'block'}`}
                 style={{ 
                     zIndex: 1, 
                     position: 'relative' 
@@ -449,7 +490,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
           onPointerUp={stopDrawing}
           onPointerLeave={stopDrawing}
           onPointerCancel={stopDrawing}
-          className="absolute top-0 left-0 w-full h-full cursor-crosshair"
+          className={`absolute top-0 left-0 w-full cursor-crosshair ${mode === 'text' ? 'hidden' : 'block'}`}
           style={{ 
             zIndex: 2,
             pointerEvents: mode === 'draw' ? 'auto' : 'none'
@@ -470,7 +511,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
             Cancel
           </button>
           <button 
-            onClick={() => { setPaths([]); setClearConfirm(false); }}
+            onClick={() => { setPaths([]); setUndoStack([]); setClearConfirm(false); }}
             className="px-5 py-2.5 rounded-xl font-medium text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm shadow-red-600/20"
           >
             Yes, Clear
