@@ -147,15 +147,11 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
   }, [onSave, onBack]);
 
   useEffect(() => {
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.height = '100%';
     return () => {
-      document.body.style.overflow = 'auto';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.height = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
     };
   }, []);
 
@@ -370,7 +366,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
   };
 
   return (
-    <div className="flex flex-col h-full bg-white z-50 fixed inset-0">
+    <div className="flex flex-col h-full bg-white z-50 fixed inset-0 overscroll-none">
       {/* iOS Style Header */}
       <div className="bg-white/80 backdrop-blur-md border-b border-stone-200/50 px-2 py-3 flex items-center justify-between z-20 shrink-0 safe-top">
         <div className="flex items-center gap-1 flex-1 overflow-x-auto no-scrollbar mask-edges pr-4">
@@ -422,24 +418,24 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
           {/* Dynamic Tools based on Note Type */}
           {mode === 'text' ? (
             <div className="flex items-center justify-end gap-1 sm:gap-2 overflow-x-auto no-scrollbar w-full">
-              <button onMouseDown={(e) => { e.preventDefault(); execCmd('bold'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bold">
+              <button onPointerDown={(e) => { e.preventDefault(); execCmd('bold'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bold">
                 <IconBold size={18} strokeWidth={2.5} />
               </button>
-              <button onMouseDown={(e) => { e.preventDefault(); execCmd('italic'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Italic">
+              <button onPointerDown={(e) => { e.preventDefault(); execCmd('italic'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Italic">
                 <IconItalic size={18} strokeWidth={2.5} />
               </button>
-              <button onMouseDown={(e) => { e.preventDefault(); execCmd('underline'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Underline">
+              <button onPointerDown={(e) => { e.preventDefault(); execCmd('underline'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Underline">
                 <IconUnderline size={18} strokeWidth={2.5} />
               </button>
               <div className="w-px h-5 bg-stone-200 mx-1 shrink-0"></div>
-              <button onMouseDown={(e) => { e.preventDefault(); execCmd('insertUnorderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bullet List">
+              <button onPointerDown={(e) => { e.preventDefault(); execCmd('insertUnorderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bullet List">
                 <IconList size={18} strokeWidth={2.5} />
               </button>
-              <button onMouseDown={(e) => { e.preventDefault(); execCmd('insertOrderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Numbered List">
+              <button onPointerDown={(e) => { e.preventDefault(); execCmd('insertOrderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Numbered List">
                 <IconListOrdered size={18} strokeWidth={2.5} />
               </button>
               <div className="w-px h-5 bg-stone-200 mx-1 shrink-0"></div>
-              <button onMouseDown={(e) => { e.preventDefault(); toggleHighlight(); }} className="p-2 text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 rounded-lg shrink-0 transition-colors" title="Highlight">
+              <button onPointerDown={(e) => { e.preventDefault(); toggleHighlight(); }} className="p-2 text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 rounded-lg shrink-0 transition-colors" title="Highlight">
                 <IconHighlighter size={18} strokeWidth={2.5} />
               </button>
             </div>
@@ -506,7 +502,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
                 onClick={() => {
                    if (!isEditing) handleEditToggle();
                 }}
-                className="w-full px-6 sm:px-10 pt-8 pb-2 text-3xl font-bold text-stone-800 bg-transparent border-none outline-none placeholder-stone-300"
+                className="w-full px-6 sm:px-10 pt-8 pb-2 text-2xl font-bold font-sans text-stone-800 bg-transparent border-none outline-none placeholder-stone-300"
                 placeholder="Title"
                 style={{ zIndex: 3, position: 'relative' }}
             />
