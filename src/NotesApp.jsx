@@ -4,6 +4,40 @@ import { db } from './App';
 import { Folder as IconFolder, FolderPlus as IconFolderPlus, Search as IconSearch, FileText as IconFileText, Trash2 as IconTrash2, PenTool as IconPenTool, Edit3 as IconEdit3, ChevronDown as IconChevronDown, X as IconX, ChevronRight as IconChevronRight, ArrowLeft as IconArrowLeft, Type as IconType, PenLine as IconPenLine } from 'lucide-react';
 import NoteEditor from './NoteEditor';
 
+const renderDrawingThumbnail = (pathsStr) => {
+  if (!pathsStr || pathsStr === '[]') return null;
+  try {
+    const paths = JSON.parse(pathsStr);
+    if (!paths.length) return null;
+    return (
+      <svg viewBox="0 0 1000 1000" className="w-full h-full object-cover opacity-60" preserveAspectRatio="xMidYMid slice">
+        {paths.map((p, i) => {
+          if (!p.points || p.points.length === 0) return null;
+          let d = `M ${p.points[0].x} ${p.points[0].y}`;
+          for(let j=1; j<p.points.length; j+=2) {
+             const pt = p.points[j];
+             if(pt) d += ` L ${pt.x} ${pt.y}`;
+          }
+          return (
+            <path 
+              key={i} 
+              d={d} 
+              stroke={p.isEraser ? '#f8fafc' : p.color} 
+              strokeWidth={p.size * (p.isEraser ? 3 : 1)} 
+              fill="none" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              opacity={p.isHighlighter ? 0.3 : 1}
+            />
+          );
+        })}
+      </svg>
+    );
+  } catch(e) {
+    return null;
+  }
+};
+
 const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
   return (
@@ -337,27 +371,29 @@ export default function NotesApp() {
         {displayedFolders.length > 0 && (
           <div className="mb-8">
             {!searchQuery && <h3 className="text-sm font-semibold text-gray-500 mb-3 px-1">Folders</h3>}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {displayedFolders.map(folder => (
                 <div 
                   key={folder.id} 
                   onClick={() => navigateToFolder(folder.id)}
-                  className="bg-white p-3 rounded-xl shadow-sm border-t-[5px] border-[#4a3b32] hover:shadow-md transition-all cursor-pointer relative group flex items-center gap-3"
+                  className="group cursor-pointer relative pt-3"
                 >
-                  <div className="bg-stone-50 p-2 rounded-lg">
-                    <IconFolder size={24} className="text-[#4a3b32] opacity-80" fill="currentColor" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="font-semibold text-stone-800 text-sm line-clamp-1">{folder.name}</span>
-                    <div className="text-[10px] text-stone-400 font-medium mt-0.5">{notes.filter(n => n.folderId === folder.id).length} notes</div>
-                  </div>
+                  {/* Folder Tab Background */}
+                  <div className="absolute top-0 right-3 sm:right-6 w-1/2 h-8 bg-stone-300 rounded-t-2xl transition-colors group-hover:bg-[#d4cfc9]"></div>
                   
-                  <button 
-                    onClick={(e) => promptDeleteFolder(e, folder.id)}
-                    className="p-2 text-stone-300 hover:text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-stone-100"
-                  >
-                    <IconTrash2 size={16} />
-                  </button>
+                  {/* Folder Body */}
+                  <div className="bg-white rounded-2xl rounded-tr-none p-4 shadow-sm border border-stone-100 group-hover:shadow-md transition-all relative z-10 flex flex-col justify-between h-[120px]">
+                     <div className="flex flex-col">
+                       <span className="text-3xl font-light text-stone-400 leading-none mb-2">{notes.filter(n => n.folderId === folder.id).length}</span>
+                       <h4 className="font-semibold text-stone-800 text-sm line-clamp-1">{folder.name}</h4>
+                     </div>
+                     <button 
+                       onClick={(e) => promptDeleteFolder(e, folder.id)}
+                       className="absolute top-2 right-2 p-1.5 bg-stone-50 rounded-full text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 hover:bg-red-50"
+                     >
+                       <IconTrash2 size={14} />
+                     </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -379,29 +415,38 @@ export default function NotesApp() {
               <p className="text-stone-500 text-sm mb-6">Create a new note or folder to get started.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {displayedNotes.map(note => (
                 <div 
                   key={note.id} 
                   onClick={() => openExistingNote(note)}
-                  className="bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer relative group border border-transparent hover:border-stone-100 flex flex-col justify-between"
+                  className="bg-white p-4 rounded-3xl shadow-sm hover:shadow-md transition-all cursor-pointer relative group border border-transparent hover:border-stone-100 flex flex-col justify-between h-[180px]"
                 >
                   <button 
                     onClick={(e) => promptDeleteNote(e, note.id)}
-                    className="absolute top-3 right-3 p-1.5 bg-stone-100/80 backdrop-blur rounded-full text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 hover:bg-stone-200"
+                    className="absolute top-3 right-3 p-1.5 z-20 bg-stone-100/80 backdrop-blur rounded-full text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 hover:bg-red-50"
                   >
                     <IconTrash2 size={14} />
                   </button>
-                  <div className="flex-1 overflow-hidden">
-                    <h4 className="font-bold text-gray-800 text-base leading-tight mb-2 line-clamp-2">
-                      {note.title || 'Untitled Note'}
+                  <div className="flex-1 overflow-hidden flex flex-col relative">
+                    <h4 className="font-bold text-gray-800 text-[15px] leading-tight mb-2 line-clamp-2 shrink-0 z-10 relative">
+                      {note.title || 'Untitled'}
                     </h4>
-                    <p className="text-xs text-gray-500 line-clamp-6 leading-relaxed">
-                      {note.textContent || "No additional text..."}
-                    </p>
+                    
+                    <div className="flex-1 overflow-hidden relative w-full h-full">
+                      {note.type === 'draw' ? (
+                        <div className="absolute -inset-4 top-0 bg-stone-50/30 rounded-b-3xl pointer-events-none flex items-center justify-center overflow-hidden z-0">
+                           {renderDrawingThumbnail(note.drawingPaths)}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-500 line-clamp-5 leading-relaxed whitespace-pre-wrap relative z-10">
+                          {note.textContent || "No text..."}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   
-                  <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                  <div className="mt-2 pt-2 flex items-center justify-between shrink-0 z-10 relative">
                     <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">
                       {note.updatedAt?.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
