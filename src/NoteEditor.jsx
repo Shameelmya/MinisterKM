@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PenTool as IconPenTool, Eraser as IconEraser, Type as IconType, Highlighter as IconHighlighter, ArrowLeft as IconArrowLeft, Trash2 as IconTrash2, Link2 as IconLink2, X as IconX, ChevronRight as IconChevronRight, Undo as IconUndo, Redo as IconRedo, Bold as IconBold, Italic as IconItalic, Underline as IconUnderline, List as IconList, ListOrdered as IconListOrdered, Edit2 as IconEdit2, Check as IconCheck } from 'lucide-react';
+import { PenLine as IconPenLine, Eraser as IconEraser, Type as IconType, Highlighter as IconHighlighter, ArrowLeft as IconArrowLeft, Trash2 as IconTrash2, Link2 as IconLink2, X as IconX, ChevronRight as IconChevronRight, Undo as IconUndo, Redo as IconRedo, Bold as IconBold, Italic as IconItalic, Underline as IconUnderline, List as IconList, ListOrdered as IconListOrdered, Edit2 as IconEdit2, Check as IconCheck } from 'lucide-react';
 
 const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
@@ -42,7 +42,10 @@ const renderPathsToCanvas = (ctx, paths) => {
     ctx.lineWidth = p.size;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    if (p.isHighlighter) {
+    if (p.isEraser) {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.globalAlpha = 1.0;
+    } else if (p.isHighlighter) {
       ctx.globalCompositeOperation = 'multiply';
       ctx.globalAlpha = 0.3;
     } else {
@@ -177,8 +180,19 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
     
     const resizeCanvas = () => {
       if (containerRef.current) {
-        canvas.width = containerRef.current.offsetWidth;
-        canvas.height = getRequiredCanvasHeight();
+        const ratio = window.devicePixelRatio || 1;
+        const w = containerRef.current.offsetWidth;
+        const h = getRequiredCanvasHeight();
+        
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        
+        canvas.width = w * ratio;
+        canvas.height = h * ratio;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.scale(ratio, ratio);
+        
         redrawCanvas();
       }
     };
@@ -201,7 +215,11 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
     const canvas = canvasRef.current;
     if (!canvas || mode !== 'draw') return;
     const ctx = canvas.getContext('2d');
+    const ratio = window.devicePixelRatio || 1;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
     renderPathsToCanvas(ctx, paths);
   };
 
@@ -274,18 +292,15 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
     setIsDrawing(true);
     const coords = getCoordinates(e);
     
-    if (drawTool === 'eraser') {
-      eraseAtPoint(coords);
-    } else {
-      const newPath = {
-        color: drawTool === 'highlighter' ? COLORS.yellow : drawColor,
-        size: drawTool === 'highlighter' ? 24 : drawSize,
-        isHighlighter: drawTool === 'highlighter',
-        points: [coords]
-      };
-      setCurrentPath(newPath);
-      setUndoStack([]);
-    }
+    const newPath = {
+      color: drawTool === 'highlighter' ? COLORS.yellow : drawColor,
+      size: drawTool === 'highlighter' ? 24 : (drawTool === 'eraser' ? 30 : drawSize),
+      isHighlighter: drawTool === 'highlighter',
+      isEraser: drawTool === 'eraser',
+      points: [coords]
+    };
+    setCurrentPath(newPath);
+    setUndoStack([]);
   };
 
   const draw = (e) => {
@@ -293,9 +308,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
     e.preventDefault();
     const coords = getCoordinates(e);
 
-    if (drawTool === 'eraser') {
-      eraseAtPoint(coords);
-    } else if (currentPath) {
+    if (currentPath) {
       const newPath = {
         ...currentPath,
         points: [...currentPath.points, coords]
@@ -307,9 +320,17 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
       const ctx = canvas.getContext('2d');
       renderPathsToCanvas(ctx, [newPath]);
       
-      if (coords.y > canvas.height - 200) {
-         canvas.height += window.innerHeight;
+      // Auto expand canvas height if near bottom
+      const currentH = parseFloat(canvas.style.height || canvas.height);
+      if (coords.y > currentH - 200) {
+         const ratio = window.devicePixelRatio || 1;
+         const w = containerRef.current.offsetWidth;
+         const newH = currentH + window.innerHeight;
+         canvas.style.height = newH + 'px';
+         canvas.height = newH * ratio;
+         ctx.scale(ratio, ratio);
          redrawCanvas();
+         renderPathsToCanvas(ctx, [newPath]);
       }
     }
   };
@@ -317,22 +338,10 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
   const stopDrawing = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
-    if (currentPath && drawTool !== 'eraser') {
+    if (currentPath) {
       setPaths(prev => [...prev, currentPath]);
       setCurrentPath(null);
     }
-  };
-
-  const eraseAtPoint = (coords) => {
-    const ERASER_RADIUS = 25;
-    setPaths(prev => prev.filter(p => {
-      const hit = p.points.some(pt => {
-        const dx = pt.x - coords.x;
-        const dy = pt.y - coords.y;
-        return Math.sqrt(dx*dx + dy*dy) < ERASER_RADIUS;
-      });
-      return !hit;
-    }));
   };
 
   const handleBackUI = () => {
@@ -440,28 +449,28 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
               </button>
             </div>
           ) : (
-            <div className="flex items-center justify-center gap-2 sm:gap-4 shrink-0 w-full overflow-hidden">
+            <div className="flex items-center gap-4 sm:gap-6 shrink-0 w-full overflow-x-auto no-scrollbar pl-2 pr-6 py-1">
               {/* Draw Tools */}
-              <div className="flex items-center bg-stone-50/80 backdrop-blur rounded-full p-1 border border-stone-200/60 shadow-sm shrink-0">
-                <button onClick={() => setDrawTool('pen')} className={`p-1.5 sm:p-2 rounded-full transition-all ${drawTool === 'pen' ? 'bg-white shadow-md text-stone-900 scale-105' : 'text-stone-400 hover:text-stone-600'}`} title="Pen">
-                  <IconPenTool size={18} />
+              <div className="flex items-center gap-1.5 border-r border-stone-200/60 pr-4 shrink-0">
+                <button onClick={() => setDrawTool('pen')} className={`p-2 rounded-xl transition-all ${drawTool === 'pen' ? 'bg-stone-800 text-white shadow-md scale-105' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800'}`} title="Pen">
+                  <IconPenLine size={20} />
                 </button>
-                <button onClick={() => setDrawTool('highlighter')} className={`p-1.5 sm:p-2 rounded-full transition-all ${drawTool === 'highlighter' ? 'bg-white shadow-md text-yellow-600 scale-105' : 'text-stone-400 hover:text-yellow-600'}`} title="Highlighter">
-                  <IconHighlighter size={18} />
+                <button onClick={() => setDrawTool('highlighter')} className={`p-2 rounded-xl transition-all ${drawTool === 'highlighter' ? 'bg-yellow-100 text-yellow-700 shadow-sm scale-105 ring-1 ring-yellow-400' : 'text-stone-500 hover:bg-stone-100 hover:text-yellow-600'}`} title="Highlighter">
+                  <IconHighlighter size={20} />
                 </button>
-                <button onClick={() => setDrawTool('eraser')} className={`p-1.5 sm:p-2 rounded-full transition-all ${drawTool === 'eraser' ? 'bg-white shadow-md text-stone-900 scale-105' : 'text-stone-400 hover:text-stone-600'}`} title="Eraser">
-                  <IconEraser size={18} />
+                <button onClick={() => setDrawTool('eraser')} className={`p-2 rounded-xl transition-all ${drawTool === 'eraser' ? 'bg-stone-200 text-stone-800 shadow-sm scale-105 ring-1 ring-stone-300' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800'}`} title="Eraser">
+                  <IconEraser size={20} />
                 </button>
               </div>
               
               {/* Colors (only for pen) */}
               {drawTool === 'pen' && (
-                <div className="flex items-center gap-1.5 sm:gap-2 px-1 shrink-0">
+                <div className="flex items-center gap-3 border-r border-stone-200/60 pr-4 shrink-0">
                   {Object.values(COLORS).filter(c => c !== COLORS.yellow).map(c => (
                     <button 
                       key={c}
                       onClick={() => setDrawColor(c)}
-                      className={`w-6 h-6 rounded-full transition-all border border-black/10 ${drawColor === c ? 'scale-125 shadow-md ring-2 ring-offset-1 ring-stone-300' : 'hover:scale-110'}`}
+                      className={`w-5 h-5 rounded-full transition-all border border-black/10 ${drawColor === c ? 'scale-125 shadow-md ring-2 ring-offset-2 ring-stone-300' : 'hover:scale-110'}`}
                       style={{ backgroundColor: c }}
                     />
                   ))}
@@ -470,12 +479,12 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
               
               {/* Thickness */}
               {drawTool !== 'highlighter' && (
-                <div className="flex items-center gap-2 sm:gap-3 pl-1 sm:pl-3 shrink-0 border-l border-stone-200/60 h-6">
+                <div className="flex items-center gap-4 shrink-0 px-2">
                   {[SIZES.thin, SIZES.medium, SIZES.thick].map((s, i) => (
                     <button 
                       key={s}
                       onClick={() => setDrawSize(s)}
-                      className={`rounded-full transition-all flex items-center justify-center ${drawSize === s ? 'bg-stone-900 ring-2 ring-stone-300 ring-offset-1 scale-110' : 'bg-stone-300 hover:bg-stone-400'}`}
+                      className={`rounded-full transition-all flex items-center justify-center ${drawSize === s ? 'bg-stone-900 ring-2 ring-stone-300 ring-offset-2 scale-110' : 'bg-stone-300 hover:bg-stone-400'}`}
                       style={{ width: 6 + (i*3), height: 6 + (i*3) }}
                     />
                   ))}
