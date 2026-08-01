@@ -478,9 +478,9 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0 w-full px-2 py-1 overflow-x-auto no-scrollbar">
+            <div className="flex items-center justify-between gap-1 shrink-0 w-full px-1 py-1 overflow-x-auto no-scrollbar">
               {/* Colors (left) */}
-              <div className="flex items-center gap-3 sm:gap-4 border-r border-stone-200/60 pr-4 sm:pr-6 shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3 border-r border-stone-200/60 pr-3 sm:pr-4 shrink-0">
                 {drawTool === 'highlighter' ? (
                   Object.values(HIGHLIGHT_COLORS).map(c => (
                     <button 
@@ -503,20 +503,20 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
               </div>
               
               {/* Draw Tools (center) */}
-              <div className="flex items-center gap-1.5 border-r border-stone-200/60 pl-2 pr-4 sm:pr-6 shrink-0">
-                <button onClick={() => { setDrawTool('pen'); setDrawColor(COLORS.black); }} className={`p-2 rounded-xl transition-all ${drawTool === 'pen' ? 'bg-stone-800 text-white shadow-md scale-105' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800'}`} title="Pen">
+              <div className="flex items-center gap-1 border-r border-stone-200/60 pl-1 pr-3 sm:pr-4 shrink-0">
+                <button onClick={() => { setDrawTool('pen'); setDrawColor(COLORS.black); }} className={`p-1.5 sm:p-2 rounded-xl transition-all ${drawTool === 'pen' ? 'bg-stone-800 text-white shadow-md scale-105' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800'}`} title="Pen">
                   <IconPenLine size={18} />
                 </button>
-                <button onClick={() => { setDrawTool('highlighter'); setDrawColor(HIGHLIGHT_COLORS.yellow); }} className={`p-2 rounded-xl transition-all ${drawTool === 'highlighter' ? 'bg-yellow-100 text-yellow-700 shadow-sm scale-105 ring-1 ring-yellow-400' : 'text-stone-500 hover:bg-stone-100 hover:text-yellow-600'}`} title="Highlighter">
+                <button onClick={() => { setDrawTool('highlighter'); setDrawColor(HIGHLIGHT_COLORS.yellow); }} className={`p-1.5 sm:p-2 rounded-xl transition-all ${drawTool === 'highlighter' ? 'bg-yellow-100 text-yellow-700 shadow-sm scale-105 ring-1 ring-yellow-400' : 'text-stone-500 hover:bg-stone-100 hover:text-yellow-600'}`} title="Highlighter">
                   <IconHighlighter size={18} />
                 </button>
-                <button onClick={() => setDrawTool('eraser')} className={`p-2 rounded-xl transition-all ${drawTool === 'eraser' ? 'bg-stone-200 text-stone-800 shadow-sm scale-105 ring-1 ring-stone-300' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800'}`} title="Eraser">
+                <button onClick={() => setDrawTool('eraser')} className={`p-1.5 sm:p-2 rounded-xl transition-all ${drawTool === 'eraser' ? 'bg-stone-200 text-stone-800 shadow-sm scale-105 ring-1 ring-stone-300' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800'}`} title="Eraser">
                   <IconEraser size={18} />
                 </button>
               </div>
               
               {/* Thickness (right) */}
-              <div className="flex items-center justify-end gap-4 sm:gap-5 shrink-0 px-3 flex-1">
+              <div className="flex items-center justify-end gap-2.5 sm:gap-4 shrink-0 px-2 flex-1">
                 {[SIZES.thin, SIZES.medium, SIZES.thick].map((s, i) => (
                   <button 
                     key={s}
