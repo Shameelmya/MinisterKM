@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PenLine as IconPenLine, Eraser as IconEraser, Type as IconType, Highlighter as IconHighlighter, ArrowLeft as IconArrowLeft, Trash2 as IconTrash2, Link2 as IconLink2, X as IconX, ChevronRight as IconChevronRight, Undo as IconUndo, Redo as IconRedo, Bold as IconBold, Italic as IconItalic, Underline as IconUnderline, List as IconList, ListOrdered as IconListOrdered, Edit2 as IconEdit2, Check as IconCheck } from 'lucide-react';
+import { PenLine as IconPenLine, Eraser as IconEraser, Type as IconType, Highlighter as IconHighlighter, ArrowLeft as IconArrowLeft, Trash2 as IconTrash2, Link2 as IconLink2, X as IconX, ChevronRight as IconChevronRight, Undo2 as IconUndo, Redo2 as IconRedo, Bold as IconBold, Italic as IconItalic, Underline as IconUnderline, List as IconList, ListOrdered as IconListOrdered, Edit2 as IconEdit2, Check as IconCheck } from 'lucide-react';
 
 const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
@@ -27,6 +27,13 @@ const COLORS = {
   green: '#34C759', // iOS Green
   red: '#FF3B30', // iOS Red
   yellow: '#FFCC00' // iOS Yellow
+};
+
+const HIGHLIGHT_COLORS = {
+  yellow: '#FFEE58',
+  pink: '#F48FB1',
+  blue: '#81D4FA',
+  grey: '#CFD8DC'
 };
 
 const SIZES = {
@@ -95,6 +102,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
   const [currentPath, setCurrentPath] = useState(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [clearConfirm, setClearConfirm] = useState(false);
+  const [eraserCursor, setEraserCursor] = useState(null);
 
   const stateRef = useRef({ title, htmlContent, paths, note });
   const isEditingRef = useRef(isEditing);
@@ -108,6 +116,10 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
   useEffect(() => {
     isEditingRef.current = isEditing;
   }, [isEditing]);
+
+  useEffect(() => {
+    if (paths.length === 0) setDrawTool('pen');
+  }, [paths.length]);
 
   useEffect(() => {
     const saveAndExit = () => {
@@ -292,9 +304,17 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
     setIsDrawing(true);
     const coords = getCoordinates(e);
     
+    const actualSize = drawTool === 'eraser' 
+      ? (drawSize === SIZES.thin ? 20 : drawSize === SIZES.medium ? 35 : 50)
+      : (drawTool === 'highlighter' ? 24 : drawSize);
+      
+    if (drawTool === 'eraser') {
+      setEraserCursor({ x: coords.x, y: coords.y, radius: actualSize / 2 });
+    }
+    
     const newPath = {
-      color: drawTool === 'highlighter' ? COLORS.yellow : drawColor,
-      size: drawTool === 'highlighter' ? 24 : (drawTool === 'eraser' ? 30 : drawSize),
+      color: drawColor,
+      size: actualSize,
       isHighlighter: drawTool === 'highlighter',
       isEraser: drawTool === 'eraser',
       points: [coords]
@@ -307,6 +327,14 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
     if (!isDrawing || mode !== 'draw' || !isEditing) return;
     e.preventDefault();
     const coords = getCoordinates(e);
+
+    const actualSize = drawTool === 'eraser' 
+      ? (drawSize === SIZES.thin ? 20 : drawSize === SIZES.medium ? 35 : 50)
+      : (drawTool === 'highlighter' ? 24 : drawSize);
+      
+    if (drawTool === 'eraser') {
+      setEraserCursor({ x: coords.x, y: coords.y, radius: actualSize / 2 });
+    }
 
     if (currentPath) {
       const newPath = {
@@ -336,6 +364,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
   };
 
   const stopDrawing = () => {
+    if (drawTool === 'eraser') setEraserCursor(null);
     if (!isDrawing) return;
     setIsDrawing(false);
     if (currentPath) {
@@ -401,22 +430,22 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
         </div>
         
         {/* Undo/Redo Buttons replacing Delete */}
-        <div className="flex items-center justify-end gap-1 shrink-0 pr-2">
+        <div className="flex items-center justify-end gap-3 sm:gap-4 shrink-0 pr-2">
            {isEditing && (
              <>
                {mode === 'draw' && paths.length > 0 && (
-                 <button onClick={() => setClearConfirm(true)} className="px-3 py-1 mr-1 text-sm font-bold text-red-500 bg-red-50 rounded-full hover:bg-red-100 transition-colors active:scale-95" title="Clear Canvas">Clear</button>
+                 <button onClick={() => setClearConfirm(true)} className="px-4 py-1.5 mr-2 text-sm font-bold text-red-500 bg-red-50 rounded-full hover:bg-red-100 transition-colors active:scale-95 shadow-sm border border-red-100" title="Clear Canvas">Clear</button>
                )}
-               <button onClick={handleUndo} className="p-2 text-stone-400 hover:text-stone-800 rounded-full transition-colors active:scale-95" title="Undo">
-                 <IconUndo size={22} />
+               <button onClick={handleUndo} className="p-2.5 text-stone-500 hover:text-stone-900 bg-stone-50 hover:bg-stone-100 rounded-full transition-colors active:scale-95 shadow-sm border border-stone-100" title="Undo">
+                 <IconUndo size={20} />
                </button>
-               <button onClick={handleRedo} className="p-2 text-stone-400 hover:text-stone-800 rounded-full transition-colors active:scale-95" title="Redo">
-                 <IconRedo size={22} />
+               <button onClick={handleRedo} className="p-2.5 text-stone-500 hover:text-stone-900 bg-stone-50 hover:bg-stone-100 rounded-full transition-colors active:scale-95 shadow-sm border border-stone-100" title="Redo">
+                 <IconRedo size={20} />
                </button>
              </>
            )}
-           <button onClick={handleEditToggle} className={`p-2 rounded-full transition-colors active:scale-95 ${isEditing ? 'text-green-600 hover:bg-green-50' : 'text-stone-400 hover:text-stone-800 hover:bg-stone-50'}`} title={isEditing ? "Finish Editing" : "Edit Note"}>
-             {isEditing ? <IconCheck size={22} strokeWidth={3} /> : <IconEdit2 size={22} />}
+           <button onClick={handleEditToggle} className={`p-3 ml-2 rounded-full transition-colors active:scale-95 shadow-sm border ${isEditing ? 'text-white bg-green-500 hover:bg-green-600 border-green-600' : 'text-stone-600 bg-white hover:bg-stone-50 border-stone-200'}`} title={isEditing ? "Finish Editing" : "Edit Note"}>
+             {isEditing ? <IconCheck size={24} strokeWidth={3} /> : <IconEdit2 size={24} />}
            </button>
         </div>
       </div>
@@ -449,13 +478,36 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-4 sm:gap-6 shrink-0 w-full overflow-x-auto no-scrollbar pl-2 pr-6 py-1">
-              {/* Draw Tools */}
-              <div className="flex items-center gap-1.5 border-r border-stone-200/60 pr-4 shrink-0">
-                <button onClick={() => setDrawTool('pen')} className={`p-2 rounded-xl transition-all ${drawTool === 'pen' ? 'bg-stone-800 text-white shadow-md scale-105' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800'}`} title="Pen">
+            <div className="flex items-center justify-between gap-2 shrink-0 w-full px-2 py-1 overflow-hidden">
+              {/* Colors (left) */}
+              <div className="flex items-center gap-2 border-r border-stone-200/60 pr-2 sm:pr-4 shrink-0">
+                {drawTool === 'highlighter' ? (
+                  Object.values(HIGHLIGHT_COLORS).map(c => (
+                    <button 
+                      key={c}
+                      onClick={() => setDrawColor(c)}
+                      className={`w-5 h-5 rounded-full transition-all border border-black/10 ${drawColor === c ? 'scale-125 shadow-md ring-2 ring-offset-2 ring-stone-300' : 'hover:scale-110'}`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))
+                ) : (
+                  Object.values(COLORS).filter(c => c !== COLORS.yellow).map(c => (
+                    <button 
+                      key={c}
+                      onClick={() => setDrawColor(c)}
+                      className={`w-5 h-5 rounded-full transition-all border border-black/10 ${drawColor === c ? 'scale-125 shadow-md ring-2 ring-offset-2 ring-stone-300' : 'hover:scale-110'}`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))
+                )}
+              </div>
+              
+              {/* Draw Tools (center) */}
+              <div className="flex items-center gap-1.5 border-r border-stone-200/60 pr-2 sm:pr-4 shrink-0">
+                <button onClick={() => { setDrawTool('pen'); setDrawColor(COLORS.black); }} className={`p-2 rounded-xl transition-all ${drawTool === 'pen' ? 'bg-stone-800 text-white shadow-md scale-105' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800'}`} title="Pen">
                   <IconPenLine size={20} />
                 </button>
-                <button onClick={() => setDrawTool('highlighter')} className={`p-2 rounded-xl transition-all ${drawTool === 'highlighter' ? 'bg-yellow-100 text-yellow-700 shadow-sm scale-105 ring-1 ring-yellow-400' : 'text-stone-500 hover:bg-stone-100 hover:text-yellow-600'}`} title="Highlighter">
+                <button onClick={() => { setDrawTool('highlighter'); setDrawColor(HIGHLIGHT_COLORS.yellow); }} className={`p-2 rounded-xl transition-all ${drawTool === 'highlighter' ? 'bg-yellow-100 text-yellow-700 shadow-sm scale-105 ring-1 ring-yellow-400' : 'text-stone-500 hover:bg-stone-100 hover:text-yellow-600'}`} title="Highlighter">
                   <IconHighlighter size={20} />
                 </button>
                 <button onClick={() => setDrawTool('eraser')} className={`p-2 rounded-xl transition-all ${drawTool === 'eraser' ? 'bg-stone-200 text-stone-800 shadow-sm scale-105 ring-1 ring-stone-300' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800'}`} title="Eraser">
@@ -463,33 +515,17 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
                 </button>
               </div>
               
-              {/* Colors (only for pen) */}
-              {drawTool === 'pen' && (
-                <div className="flex items-center gap-3 border-r border-stone-200/60 pr-4 shrink-0">
-                  {Object.values(COLORS).filter(c => c !== COLORS.yellow).map(c => (
-                    <button 
-                      key={c}
-                      onClick={() => setDrawColor(c)}
-                      className={`w-5 h-5 rounded-full transition-all border border-black/10 ${drawColor === c ? 'scale-125 shadow-md ring-2 ring-offset-2 ring-stone-300' : 'hover:scale-110'}`}
-                      style={{ backgroundColor: c }}
-                    />
-                  ))}
-                </div>
-              )}
-              
-              {/* Thickness */}
-              {drawTool !== 'highlighter' && (
-                <div className="flex items-center gap-4 shrink-0 px-2">
-                  {[SIZES.thin, SIZES.medium, SIZES.thick].map((s, i) => (
-                    <button 
-                      key={s}
-                      onClick={() => setDrawSize(s)}
-                      className={`rounded-full transition-all flex items-center justify-center ${drawSize === s ? 'bg-stone-900 ring-2 ring-stone-300 ring-offset-2 scale-110' : 'bg-stone-300 hover:bg-stone-400'}`}
-                      style={{ width: 6 + (i*3), height: 6 + (i*3) }}
-                    />
-                  ))}
-                </div>
-              )}
+              {/* Thickness (right) */}
+              <div className="flex items-center justify-end gap-3 sm:gap-4 shrink-0 px-2 flex-1">
+                {[SIZES.thin, SIZES.medium, SIZES.thick].map((s, i) => (
+                  <button 
+                    key={s}
+                    onClick={() => setDrawSize(s)}
+                    className={`rounded-full transition-all flex items-center justify-center ${drawSize === s ? 'bg-stone-900 ring-2 ring-stone-300 ring-offset-2 scale-110' : 'bg-stone-300 hover:bg-stone-400'}`}
+                    style={{ width: 6 + (i*3), height: 6 + (i*3) }}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -548,6 +584,19 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
             pointerEvents: (mode === 'draw' && isEditing) ? 'auto' : 'none'
           }}
         />
+        
+        {eraserCursor && (
+          <div 
+            className="absolute rounded-full border-2 border-stone-400 bg-white/40 pointer-events-none shadow-sm"
+            style={{
+              zIndex: 3,
+              left: eraserCursor.x - eraserCursor.radius,
+              top: eraserCursor.y - eraserCursor.radius,
+              width: eraserCursor.radius * 2,
+              height: eraserCursor.radius * 2
+            }}
+          />
+        )}
       </div>
       
       {/* Modals */}
