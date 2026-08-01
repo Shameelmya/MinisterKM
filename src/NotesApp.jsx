@@ -414,7 +414,7 @@ export default function NotesApp() {
       </div>
 
       {/* Floating Action Buttons */}
-      <div className="fixed bottom-24 sm:bottom-12 right-6 z-40 print:hidden flex flex-col gap-4 items-end">
+      <div className="fixed bottom-20 sm:bottom-8 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 z-40 print:hidden flex flex-col sm:flex-row gap-3 items-end sm:items-center">
         {/* Text Note FAB */}
         <button 
           onClick={() => handleCreateNote('type')}
@@ -422,7 +422,7 @@ export default function NotesApp() {
           title="New Text Note"
         >
           <IconType size={22} strokeWidth={2.5} className="shrink-0" />
-          <span className="hidden sm:block font-bold text-sm">Add Text Note</span>
+          <span className="hidden sm:block font-bold text-sm whitespace-nowrap">Add Text Note</span>
         </button>
         
         {/* Draw Note FAB */}
@@ -432,7 +432,7 @@ export default function NotesApp() {
           title="New Draw Note"
         >
           <IconPenLine size={22} className="shrink-0" />
-          <span className="hidden sm:block font-bold text-sm">Add Draw Note</span>
+          <span className="hidden sm:block font-bold text-sm whitespace-nowrap">Add Draw Note</span>
         </button>
       </div>
       {/* Modals */}
