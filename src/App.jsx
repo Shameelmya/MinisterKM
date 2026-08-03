@@ -1534,7 +1534,8 @@ const MainApp = () => {
           filename:     `KM_Shaji_${config.viewMode === 'todo' ? 'ToDo' : 'Schedule'}_${dateStr}.pdf`,
           image:        { type: 'jpeg', quality: 1 },
           html2canvas:  { scale: 2, useCORS: true, logging: false },
-          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          enableLinks:  true
         };
         
         await html2pdf().from(element).set(opt).save();
@@ -2081,7 +2082,12 @@ User said: "${transcript}"`
                             <div className={p.completed ? "line-through text-stone-400 whitespace-pre-wrap leading-snug" : "font-normal leading-snug whitespace-pre-wrap"}>
                               {p.eventName}
                               {p.coName && `\nC/o: ${p.coName}`}
-                              {p.contactNumber && `\nMob: ${p.contactNumber}`}
+                              {p.contactNumber && (
+                                <>
+                                  <br />
+                                  Mob: <a href={`tel:${p.contactNumber}`} className="text-inherit no-underline">{p.contactNumber}</a>
+                                </>
+                              )}
                             </div>
                             {p.type === 'todo' && p.link && <div className="font-normal break-all mt-1">{p.link}</div>}
                           </td>
