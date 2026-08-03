@@ -288,14 +288,39 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
     };
   }, [mode, isEditing]);
 
+  const savedSelection = useRef(null);
+
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel.getRangeAt && sel.rangeCount) {
+      savedSelection.current = sel.getRangeAt(0);
+    }
+  };
+
+  const restoreSelection = () => {
+    if (savedSelection.current) {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedSelection.current);
+    }
+  };
+
   const execCmd = (cmd, val) => {
+    restoreSelection();
     document.execCommand(cmd, false, val);
-    if (editorRef.current) editorRef.current.focus();
+    if (editorRef.current) {
+       editorRef.current.focus();
+       saveSelection();
+    }
   };
 
   const toggleHighlight = () => {
+    restoreSelection();
     document.execCommand('hiliteColor', false, 'yellow');
-    if (editorRef.current) editorRef.current.focus();
+    if (editorRef.current) {
+       editorRef.current.focus();
+       saveSelection();
+    }
   };
 
   const handleUndo = () => {
@@ -608,6 +633,10 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
                 onClick={() => {
                    if (mode === 'text' && !isEditing) handleEditToggle();
                 }}
+                onSelect={saveSelection}
+                onKeyUp={saveSelection}
+                onMouseUp={saveSelection}
+                onTouchEnd={saveSelection}
                 className={`min-h-[500px] px-6 sm:px-10 pb-20 outline-none text-stone-800 leading-relaxed prose prose-stone max-w-none font-sans ${mode === 'draw' ? 'hidden' : 'block'} ${!isEditing ? 'cursor-pointer' : ''}`}
                 style={{ 
                     zIndex: 1, 
