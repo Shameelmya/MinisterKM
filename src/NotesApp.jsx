@@ -519,7 +519,7 @@ export default function NotesApp() {
       </div>
 
       {/* Floating Action Buttons */}
-      <div className="fixed bottom-20 sm:bottom-8 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 z-40 print:hidden flex flex-col sm:flex-row gap-3 items-end sm:items-center">
+      <div className="fixed bottom-28 sm:bottom-8 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 z-40 print:hidden flex flex-col sm:flex-row gap-3 items-end sm:items-center">
         {/* Text Note FAB */}
         <button 
           onClick={() => handleCreateNote('type')}

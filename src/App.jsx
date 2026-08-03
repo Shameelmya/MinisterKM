@@ -1815,7 +1815,7 @@ User said: "${transcript}"`
 
         {/* Floating Action Buttons */}
         {permissions.canAdd && activeScreen !== 'notes' && (
-          <div className="fixed bottom-20 sm:bottom-8 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 z-40 print:hidden flex flex-col sm:flex-row gap-3">
+          <div className="fixed bottom-28 sm:bottom-8 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 z-40 print:hidden flex flex-col sm:flex-row gap-3">
             <div className="relative flex items-center justify-center">
               {isListening && (
                 <>
@@ -1870,9 +1870,10 @@ User said: "${transcript}"`
               </div>
 
               {/* Center: Schedule (Prominent) */}
-              <div className="flex justify-center shrink-0 -mt-10 relative z-10">
+              <div className="flex justify-center shrink-0 -mt-6 relative z-10">
                 <button 
                   onClick={() => { window.scrollTo(0, 0); setActiveScreen('main'); setViewMode('schedule'); }} 
+                  onDoubleClick={() => setCurrentDate(new Date())}
                   className={`flex flex-col items-center justify-center w-[72px] h-[72px] rounded-[24px] shadow-[0_12px_24px_-6px_rgba(74,59,50,0.4)] transition-transform active:scale-95 border-[3px] border-white ${viewMode === 'schedule' && activeScreen === 'main' ? 'bg-[#4a3b32] text-white' : 'bg-[#6b584a] text-white/90 hover:bg-[#5c4a3e]'}`}
                 >
                   <IconBookOpen size={26} className="mb-1" strokeWidth={2.5} />
