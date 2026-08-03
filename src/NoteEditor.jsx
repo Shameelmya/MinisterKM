@@ -160,35 +160,15 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
   useEffect(() => {
     const originalStyles = {
       htmlOverflow: document.documentElement.style.overflow,
-      htmlPosition: document.documentElement.style.position,
-      htmlHeight: document.documentElement.style.height,
-      htmlWidth: document.documentElement.style.width,
       bodyOverflow: document.body.style.overflow,
-      bodyPosition: document.body.style.position,
-      bodyHeight: document.body.style.height,
-      bodyWidth: document.body.style.width,
     };
 
     document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.position = 'fixed';
-    document.documentElement.style.height = '100%';
-    document.documentElement.style.width = '100%';
-    
     document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.height = '100%';
-    document.body.style.width = '100%';
 
     return () => {
       document.documentElement.style.overflow = originalStyles.htmlOverflow;
-      document.documentElement.style.position = originalStyles.htmlPosition;
-      document.documentElement.style.height = originalStyles.htmlHeight;
-      document.documentElement.style.width = originalStyles.htmlWidth;
-      
       document.body.style.overflow = originalStyles.bodyOverflow;
-      document.body.style.position = originalStyles.bodyPosition;
-      document.body.style.height = originalStyles.bodyHeight;
-      document.body.style.width = originalStyles.bodyWidth;
     };
   }, []);
 
@@ -500,24 +480,24 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
           {/* Dynamic Tools based on Note Type */}
           {mode === 'text' ? (
             <div className="flex items-center justify-end gap-1 sm:gap-2 overflow-x-auto no-scrollbar w-full">
-              <button onPointerDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('bold'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bold">
+              <button type="button" tabIndex={-1} onMouseDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('bold'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bold">
                 <IconBold size={18} strokeWidth={2.5} />
               </button>
-              <button onPointerDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('italic'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Italic">
+              <button type="button" tabIndex={-1} onMouseDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('italic'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Italic">
                 <IconItalic size={18} strokeWidth={2.5} />
               </button>
-              <button onPointerDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('underline'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Underline">
+              <button type="button" tabIndex={-1} onMouseDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('underline'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Underline">
                 <IconUnderline size={18} strokeWidth={2.5} />
               </button>
               <div className="w-px h-5 bg-stone-200 mx-1 shrink-0"></div>
-              <button onPointerDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('insertUnorderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bullet List">
+              <button type="button" tabIndex={-1} onMouseDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('insertUnorderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Bullet List">
                 <IconList size={18} strokeWidth={2.5} />
               </button>
-              <button onPointerDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('insertOrderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Numbered List">
+              <button type="button" tabIndex={-1} onMouseDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); execCmd('insertOrderedList'); }} className="p-2 text-stone-700 hover:bg-stone-100 rounded-lg shrink-0 transition-colors" title="Numbered List">
                 <IconListOrdered size={18} strokeWidth={2.5} />
               </button>
               <div className="w-px h-5 bg-stone-200 mx-1 shrink-0"></div>
-              <button onPointerDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); toggleHighlight(); }} className="p-2 text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 rounded-lg shrink-0 transition-colors" title="Highlight">
+              <button type="button" tabIndex={-1} onMouseDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); toggleHighlight(); }} className="p-2 text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 rounded-lg shrink-0 transition-colors" title="Highlight">
                 <IconHighlighter size={18} strokeWidth={2.5} />
               </button>
             </div>
