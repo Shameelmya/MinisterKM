@@ -333,6 +333,7 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
   const [minute, setMinute] = useState(initialMin);
   const [ampm, setAmpm] = useState(initialAmPm);
   const [eventName, setEventName] = useState(initialData?.eventName || '');
+  const [coName, setCoName] = useState(initialData?.coName || '');
   const [contactNumber, setContactNumber] = useState(initialData?.contactNumber || '');
   const [link, setLink] = useState(initialData?.link || '');
   const [priority, setPriority] = useState(initialData?.priority || 'medium');
@@ -353,6 +354,7 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
       type: entryMode,
       time: timeString, 
       eventName: eventName.trim(), 
+      coName: coName.trim(),
       contactNumber: contactNumber.trim(),
       link: entryMode === 'todo' ? link.trim() : null,
       priority 
@@ -458,6 +460,22 @@ const ProgramForm = ({ initialData, onSubmit, onCancel, isSaving }) => {
             rows={4}
             className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:border-[#4a3b32] focus:ring-1 focus:ring-[#4a3b32] outline-none transition-all resize-none"
             placeholder="Enter details..."
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-stone-700 mb-1.5">C/o (Person Name) <span className="text-stone-400 font-normal">(Optional)</span></label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
+            <IconUser size={16} />
+          </div>
+          <input
+            type="text"
+            value={coName}
+            onChange={(e) => setCoName(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 rounded-xl border border-stone-200 focus:border-[#4a3b32] focus:ring-1 focus:ring-[#4a3b32] outline-none transition-all"
+            placeholder="Care of..."
           />
         </div>
       </div>
@@ -867,6 +885,15 @@ const ProgramCard = ({ program }) => {
           {program.eventName}
         </p>
         
+        {program.coName && (
+          <div className="mt-2 flex items-center text-sm">
+            <IconUser size={14} className={`mr-1.5 flex-shrink-0 ${program.completed ? 'text-stone-400' : 'text-[#4a3b32]'}`} />
+            <span className={`truncate font-medium ${program.completed ? 'text-stone-400' : 'text-[#4a3b32]'}`}>
+              {program.coName}
+            </span>
+          </div>
+        )}
+
         {program.contactNumber && (
           <div className="mt-2 flex items-center text-sm">
             <IconPhone size={14} className={`mr-1.5 flex-shrink-0 ${program.completed ? 'text-stone-400' : 'text-[#4a3b32]'}`} />
@@ -1604,9 +1631,11 @@ The user is speaking naturally, so there may be filler words, hesitations, mista
 Your job is to ignore the unwanted words and extract ONLY the refined, professional details into a clean diary note.
 Return RAW JSON ONLY, no markdown formatting (\`\`\`json) or comments.
 Fields to output:
-- type: 'schedule' or 'todo'. If user says 'starting to do' or 'todo' or it sounds like a task, set 'todo'. Otherwise 'schedule'.
-- eventName: The clean, professional name of the program, place, or person (e.g., instead of "uh I am going to meet the ADGP at", just output "Meeting with ADGP"). Keep it in the language the user spoke (Malayalam or English).
+- eventName: The name or description of the event. (e.g., "Meeting with Mayor", "Buy groceries")
+- coName: A person's name mentioned as "Care of" or "C/o" if specified, else "".
 - contactNumber: The phone number if mentioned, else "".
+- type: "schedule" for time-specific events, "todo" for general tasks.
+- link: Any URL or link mentioned.
 - time: The time in 24-hour format "HH:MM" if mentioned (e.g., 11:00 AM -> 11:00, 2:00 PM -> 14:00), else "".
 - date: The date in "YYYY-MM-DD" format if a specific date or day is mentioned (e.g., tomorrow, next saturday, 12th Aug). Today's date is ${getLocalDateString(new Date())}. If no date is mentioned, return "".
 
@@ -2038,6 +2067,7 @@ User said: "${transcript}"`
                             )}
                             <div className={p.completed ? "line-through text-stone-400 whitespace-pre-wrap leading-snug" : "font-normal leading-snug whitespace-pre-wrap"}>
                               {p.eventName}
+                              {p.coName && `\nC/o: ${p.coName}`}
                               {p.contactNumber && `\nMob: ${p.contactNumber}`}
                             </div>
                             {p.type === 'todo' && p.link && <div className="font-normal break-all mt-1">{p.link}</div>}
