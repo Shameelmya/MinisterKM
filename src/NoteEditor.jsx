@@ -165,10 +165,32 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
 
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
+    
+    // Android visualViewport Fix for Virtual Keyboard
+    const updateLayout = () => {
+       const vv = window.visualViewport;
+       const rootEl = document.getElementById('note-editor-root');
+       if (vv && rootEl) {
+          rootEl.style.height = `${vv.height}px`;
+          rootEl.style.top = `${vv.offsetTop}px`;
+       }
+    };
+    
+    if (window.visualViewport) {
+       window.visualViewport.addEventListener('resize', updateLayout);
+       window.visualViewport.addEventListener('scroll', updateLayout);
+       // Small delay to allow initial layout
+       setTimeout(updateLayout, 100);
+    }
 
     return () => {
       document.documentElement.style.overflow = originalStyles.htmlOverflow;
       document.body.style.overflow = originalStyles.bodyOverflow;
+      
+      if (window.visualViewport) {
+         window.visualViewport.removeEventListener('resize', updateLayout);
+         window.visualViewport.removeEventListener('scroll', updateLayout);
+      }
     };
   }, []);
 
@@ -428,7 +450,7 @@ export default function NoteEditor({ note, folderPath = [], onSave, onBack, onDe
   };
 
   return (
-    <div className="flex flex-col bg-white z-[9999] fixed top-0 left-0 right-0 bottom-0 w-full h-[100dvh] sm:h-[100vh] overscroll-none" style={{ position: 'fixed' }}>
+    <div id="note-editor-root" className="flex flex-col bg-white z-[9999] fixed top-0 left-0 right-0 w-full h-[100dvh] sm:h-[100vh] overscroll-none" style={{ position: 'fixed' }}>
       {/* iOS Style Header */}
       <div className="bg-white/80 backdrop-blur-md border-b border-stone-200/50 px-2 py-3 flex items-center justify-between z-20 shrink-0 safe-top">
         <div className="flex items-center gap-1 flex-1 overflow-x-auto no-scrollbar mask-edges pr-4">
