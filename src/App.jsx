@@ -1855,18 +1855,18 @@ User said: "${transcript}"`
           <div className="bg-white/95 backdrop-blur-xl border border-stone-200/60 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-2">
             <div className="flex justify-between items-center relative gap-1">
               
-              {/* Left: Settings and Exit */}
+              {/* Left: Exit and Settings */}
               <div className="flex gap-1.5 flex-1 justify-start">
+                <button onClick={() => openModal('#logout', setIsLogoutConfirmOpen)} className="flex flex-col items-center justify-center flex-1 aspect-square max-w-[60px] rounded-[18px] bg-stone-100/50 text-[#8a7f78] hover:text-[#3a2e26] hover:bg-stone-100 transition-colors">
+                  <IconUser size={22} className="mb-0.5" />
+                  <span className="text-[9px] font-semibold tracking-tight">Exit</span>
+                </button>
                 {user.role === ROLES.PS_EDIT && (
                   <button onClick={() => openModal('#settings', setIsSettingsOpen)} className="flex flex-col items-center justify-center flex-1 aspect-square max-w-[60px] rounded-[18px] bg-stone-100/50 text-[#8a7f78] hover:text-[#3a2e26] hover:bg-stone-100 transition-colors">
                     <IconSettings size={22} className="mb-0.5" />
                     <span className="text-[9px] font-semibold tracking-tight">Settings</span>
                   </button>
                 )}
-                <button onClick={() => openModal('#logout', setIsLogoutConfirmOpen)} className="flex flex-col items-center justify-center flex-1 aspect-square max-w-[60px] rounded-[18px] bg-stone-100/50 text-[#8a7f78] hover:text-[#3a2e26] hover:bg-stone-100 transition-colors">
-                  <IconUser size={22} className="mb-0.5" />
-                  <span className="text-[9px] font-semibold tracking-tight">Exit</span>
-                </button>
               </div>
 
               {/* Center: Schedule (Prominent) */}
