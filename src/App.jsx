@@ -1851,39 +1851,57 @@ User said: "${transcript}"`
         )}
 
         {/* Mobile Bottom Navigation */}
-        <nav className="fixed bottom-0 w-full bg-white border-t border-stone-200 pb-safe sm:hidden z-30 print:hidden shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
-          <div className="flex justify-around items-center h-16">
-            <button onClick={() => { window.scrollTo(0, 0); setActiveScreen('main'); setViewMode('schedule'); }} className={`flex flex-col items-center justify-center w-full h-full ${viewMode === 'schedule' && activeScreen === 'main' ? 'text-[#4a3b32]' : 'text-[#8a7f78] hover:text-[#3a2e26]'}`}>
-              <IconBookOpen size={20} className="mb-1" />
-              <span className="text-[10px] font-semibold">Schedule</span>
-            </button>
-            {user.role === ROLES.PS_EDIT && (
-              <button onClick={() => { window.scrollTo(0, 0); setActiveScreen('main'); setViewMode('todo'); }} className={`flex flex-col items-center justify-center w-full h-full ${viewMode === 'todo' && activeScreen === 'main' ? 'text-[#4a3b32]' : 'text-[#8a7f78] hover:text-[#3a2e26]'}`}>
-                <IconCheckCircle size={20} className="mb-1" />
-                <span className="text-[10px] font-semibold">To-Do</span>
-              </button>
-            )}
-            {user.role === ROLES.PS_EDIT ? (
-              <button onClick={() => setActiveScreen('notes')} className={`flex flex-col items-center justify-center w-full h-full ${activeScreen === 'notes' ? 'text-[#4a3b32]' : 'text-[#8a7f78] hover:text-[#3a2e26]'}`}>
-                <IconPenTool size={20} className="mb-1" />
-                <span className="text-[10px] font-medium">Notes</span>
-              </button>
-            ) : (
-              <button onClick={() => openModal('#calendar', setIsCalendarOpen)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26]">
-                <IconCalendar size={20} className="mb-1" />
-                <span className="text-[10px] font-medium">Calendar</span>
-              </button>
-            )}
-            {user.role === ROLES.PS_EDIT && (
-              <button onClick={() => openModal('#settings', setIsSettingsOpen)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26]">
-                <IconSettings size={20} className="mb-1" />
-                <span className="text-[10px] font-medium">Settings</span>
-              </button>
-            )}
-            <button onClick={() => openModal('#logout', setIsLogoutConfirmOpen)} className="flex flex-col items-center justify-center w-full h-full text-[#8a7f78] hover:text-[#3a2e26]">
-              <IconUser size={20} className="mb-1" />
-              <span className="text-[10px] font-medium">Exit</span>
-            </button>
+        <nav className="fixed bottom-4 left-4 right-4 sm:hidden z-30 print:hidden pb-safe">
+          <div className="bg-white/95 backdrop-blur-xl border border-stone-200/60 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-2">
+            <div className="flex justify-between items-center relative gap-1">
+              
+              {/* Left: Settings and Exit */}
+              <div className="flex gap-1.5 flex-1 justify-start">
+                {user.role === ROLES.PS_EDIT && (
+                  <button onClick={() => openModal('#settings', setIsSettingsOpen)} className="flex flex-col items-center justify-center flex-1 aspect-square max-w-[60px] rounded-[18px] bg-stone-100/50 text-[#8a7f78] hover:text-[#3a2e26] hover:bg-stone-100 transition-colors">
+                    <IconSettings size={22} className="mb-0.5" />
+                    <span className="text-[9px] font-semibold tracking-tight">Settings</span>
+                  </button>
+                )}
+                <button onClick={() => openModal('#logout', setIsLogoutConfirmOpen)} className="flex flex-col items-center justify-center flex-1 aspect-square max-w-[60px] rounded-[18px] bg-stone-100/50 text-[#8a7f78] hover:text-[#3a2e26] hover:bg-stone-100 transition-colors">
+                  <IconUser size={22} className="mb-0.5" />
+                  <span className="text-[9px] font-semibold tracking-tight">Exit</span>
+                </button>
+              </div>
+
+              {/* Center: Schedule (Prominent) */}
+              <div className="flex justify-center shrink-0 -mt-10 relative z-10">
+                <button 
+                  onClick={() => { window.scrollTo(0, 0); setActiveScreen('main'); setViewMode('schedule'); }} 
+                  className={`flex flex-col items-center justify-center w-[72px] h-[72px] rounded-[24px] shadow-[0_12px_24px_-6px_rgba(74,59,50,0.4)] transition-transform active:scale-95 border-[3px] border-white ${viewMode === 'schedule' && activeScreen === 'main' ? 'bg-[#4a3b32] text-white' : 'bg-[#6b584a] text-white/90 hover:bg-[#5c4a3e]'}`}
+                >
+                  <IconBookOpen size={26} className="mb-1" strokeWidth={2.5} />
+                  <span className="text-[10px] font-bold tracking-wide">Schedule</span>
+                </button>
+              </div>
+
+              {/* Right: To Do and Notes (or Calendar) */}
+              <div className="flex gap-1.5 flex-1 justify-end">
+                {user.role === ROLES.PS_EDIT && (
+                  <button onClick={() => { window.scrollTo(0, 0); setActiveScreen('main'); setViewMode('todo'); }} className={`flex flex-col items-center justify-center flex-1 aspect-square max-w-[60px] rounded-[18px] transition-colors ${viewMode === 'todo' && activeScreen === 'main' ? 'bg-stone-200/80 text-[#4a3b32]' : 'bg-stone-100/50 text-[#8a7f78] hover:text-[#3a2e26] hover:bg-stone-100'}`}>
+                    <IconCheckCircle size={22} className="mb-0.5" />
+                    <span className="text-[9px] font-semibold tracking-tight">To-Do</span>
+                  </button>
+                )}
+                {user.role === ROLES.PS_EDIT ? (
+                  <button onClick={() => setActiveScreen('notes')} className={`flex flex-col items-center justify-center flex-1 aspect-square max-w-[60px] rounded-[18px] transition-colors ${activeScreen === 'notes' ? 'bg-stone-200/80 text-[#4a3b32]' : 'bg-stone-100/50 text-[#8a7f78] hover:text-[#3a2e26] hover:bg-stone-100'}`}>
+                    <IconPenTool size={22} className="mb-0.5" />
+                    <span className="text-[9px] font-semibold tracking-tight">Notes</span>
+                  </button>
+                ) : (
+                  <button onClick={() => openModal('#calendar', setIsCalendarOpen)} className="flex flex-col items-center justify-center flex-1 aspect-square max-w-[60px] rounded-[18px] bg-stone-100/50 text-[#8a7f78] hover:text-[#3a2e26] hover:bg-stone-100 transition-colors">
+                    <IconCalendar size={22} className="mb-0.5" />
+                    <span className="text-[9px] font-semibold tracking-tight">Calendar</span>
+                  </button>
+                )}
+              </div>
+
+            </div>
           </div>
         </nav>
 
