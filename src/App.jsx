@@ -702,77 +702,112 @@ const CalendarModal = ({ isOpen, onClose, selectedDate, onSelectDate }) => {
   );
 };
 
-const PrintModal = ({ isOpen, onClose, onPrint, canViewPriority, viewMode, isExporting }) => {
-  const [timeFilter, setTimeFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
+const PrintModal = ({ isOpen, onClose, onPrint, canViewPriority, viewMode, isExporting, programs }) => {
+  const [selectedIds, setSelectedIds] = useState([]);
   
+  // Filter by viewMode and sort chronologically
+  const sortedRelevantPrograms = useMemo(() => {
+    const relevant = programs.filter(p => {
+      if (viewMode === 'schedule') return !p.type || p.type === 'schedule';
+      return p.type === 'todo';
+    });
+    
+    return relevant.sort((a, b) => {
+      if (!a.time && !b.time) return (a.createdAt || 0) - (b.createdAt || 0);
+      if (!a.time) return -1; // No time at top
+      if (!b.time) return 1;
+      return a.time.localeCompare(b.time);
+    });
+  }, [programs, viewMode]);
+
+  // Reset selection when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedIds(sortedRelevantPrograms.map(p => p.id));
+    }
+  }, [isOpen, sortedRelevantPrograms]);
+
+  const handleToggle = (id) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
   const handlePrint = () => {
-    onPrint({ timeFilter, priorityFilter, viewMode });
+    onPrint({ selectedIds, viewMode });
     onClose();
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Export ${viewMode === 'todo' ? 'To-Dos' : 'Schedule'}`}>
-      <div className="space-y-6">
+      <div className="space-y-4">
         
-        {/* Time Scope - Only show if Schedule */}
-        {viewMode === 'schedule' && (
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-3">Time Scope</label>
-            <div className="grid grid-cols-1 gap-2">
-              {[
-                { id: 'all', label: 'All Programmes' },
-                { id: 'am', label: 'Before Noon Only' },
-                { id: 'pm', label: 'After Noon Only' },
-              ].map(opt => (
-                <label key={opt.id} className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all ${timeFilter === opt.id ? 'border-[#4a3b32] bg-stone-100' : 'border-stone-200'}`}>
-                  <input 
-                    type="radio" 
-                    name="timeFilter" 
-                    checked={timeFilter === opt.id} 
-                    onChange={() => setTimeFilter(opt.id)} 
-                    className="w-4 h-4 text-[#4a3b32] focus:ring-[#4a3b32] border-stone-300"
-                  />
-                  <span className={`ml-3 text-sm font-medium ${timeFilter === opt.id ? 'text-[#4a3b32]' : 'text-stone-700'}`}>{opt.label}</span>
-                </label>
-              ))}
-            </div>
+        <div className="flex items-center justify-between px-1">
+          <label className="text-sm font-medium text-stone-700">Select entries to include:</label>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setSelectedIds(sortedRelevantPrograms.map(p => p.id))}
+              className="text-xs font-semibold text-[#4a3b32] hover:underline"
+            >
+              Select All
+            </button>
+            <span className="text-stone-300">|</span>
+            <button 
+              onClick={() => setSelectedIds([])}
+              className="text-xs font-semibold text-stone-500 hover:text-stone-800 hover:underline"
+            >
+              Unselect All
+            </button>
           </div>
-        )}
+        </div>
 
-        {/* Priority Filter */}
-        {canViewPriority && (
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-3">Priority Filter</label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: 'all', label: 'All Priorities' },
-                { id: 'high', label: 'High Only' },
-                { id: 'medium', label: 'Medium Only' },
-                { id: 'low', label: 'Low Only' },
-              ].map(opt => (
-                <label key={opt.id} className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all ${priorityFilter === opt.id ? 'border-[#4a3b32] bg-stone-50' : 'border-stone-200'}`}>
-                  <input 
-                    type="radio" 
-                    name="priorityFilter" 
-                    checked={priorityFilter === opt.id} 
-                    onChange={() => setPriorityFilter(opt.id)} 
-                    className="w-4 h-4 text-[#4a3b32] focus:ring-[#4a3b32] border-stone-300"
-                  />
-                  <span className={`ml-3 text-sm font-medium ${priorityFilter === opt.id ? 'text-[#4a3b32]' : 'text-stone-700'}`}>{opt.label}</span>
+        <div className="max-h-[40vh] overflow-y-auto border border-stone-200 rounded-xl bg-stone-50/50 p-2 space-y-1">
+          {sortedRelevantPrograms.length === 0 ? (
+            <p className="text-sm text-center text-stone-500 py-4">No entries found for this day.</p>
+          ) : (
+            sortedRelevantPrograms.map(p => {
+              let displayTime = "All Day";
+              if (p.time && p.type !== 'todo') {
+                const [h, m] = p.time.split(':');
+                const hour = parseInt(h, 10);
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                const displayHour = hour % 12 || 12;
+                displayTime = `${displayHour}:${m} ${ampm}`;
+              }
+
+              return (
+                <label key={p.id} className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all ${selectedIds.includes(p.id) ? 'bg-white shadow-sm border border-stone-200' : 'hover:bg-stone-100 border border-transparent'}`}>
+                  <div className="pt-0.5">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedIds.includes(p.id)}
+                      onChange={() => handleToggle(p.id)}
+                      className="w-4 h-4 text-[#4a3b32] focus:ring-[#4a3b32] border-stone-300 rounded cursor-pointer"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium truncate ${selectedIds.includes(p.id) ? 'text-stone-900' : 'text-stone-500'}`}>
+                      {p.eventName}
+                    </p>
+                    {viewMode === 'schedule' && (
+                      <p className={`text-xs mt-0.5 ${selectedIds.includes(p.id) ? 'text-stone-500' : 'text-stone-400'}`}>
+                        {displayTime}
+                      </p>
+                    )}
+                  </div>
                 </label>
-              ))}
-            </div>
-          </div>
-        )}
+              );
+            })
+          )}
+        </div>
         
         <button
           onClick={handlePrint}
-          disabled={isExporting}
-          className="w-full py-3.5 bg-[#4a3b32] text-white rounded-xl font-medium hover:bg-[#3a2e26] transition-colors flex justify-center items-center gap-2 disabled:opacity-50"
+          disabled={isExporting || selectedIds.length === 0}
+          className="w-full py-3.5 mt-2 bg-[#4a3b32] text-white rounded-xl font-medium hover:bg-[#3a2e26] transition-colors flex justify-center items-center gap-2 disabled:opacity-50"
         >
           {isExporting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <IconPrinter size={18} />}
-          {isExporting ? 'Generating PDF...' : 'Download PDF'}
+          {isExporting ? 'Generating PDF...' : `Download PDF (${selectedIds.length})`}
         </button>
       </div>
     </Modal>
@@ -1411,38 +1446,24 @@ const MainApp = () => {
 
   const printPrograms = useMemo(() => {
     let filtered = programs.filter(p => {
-      if (printConfig.viewMode === 'schedule') return !p.type || p.type === 'schedule';
-      return p.type === 'todo';
+      // Default fallback if selectedIds is somehow missing (e.g., initial state)
+      if (!printConfig.selectedIds) {
+        if (printConfig.viewMode === 'schedule') return !p.type || p.type === 'schedule';
+        return p.type === 'todo';
+      }
+      return printConfig.selectedIds.includes(p.id);
     });
 
-    if (printConfig.viewMode === 'schedule' && printConfig.timeFilter !== 'all') {
-      filtered = filtered.filter(p => {
-        if (!p.time) return false; 
-        const hour = parseInt(p.time.split(':')[0], 10);
-        if (printConfig.timeFilter === 'am') return hour < 12;
-        if (printConfig.timeFilter === 'pm') return hour >= 12;
-        return true;
-      });
-    }
-
-    if (printConfig.priorityFilter !== 'all' && permissions.canViewPriority) {
-      filtered = filtered.filter(p => (p.priority || 'medium') === printConfig.priorityFilter);
-    }
-    
-    // Sort logic similar to display
-    const weight = { high: 3, medium: 2, low: 1 };
+    // Sort chronologically for the printout
     filtered.sort((a, b) => {
-      const wA = weight[a.priority || 'medium'];
-      const wB = weight[b.priority || 'medium'];
-      if (wB !== wA) return wB - wA;
-      if (!a.time && !b.time) return a.createdAt - b.createdAt;
-      if (!a.time) return 1;
-      if (!b.time) return -1;
+      if (!a.time && !b.time) return (a.createdAt || 0) - (b.createdAt || 0);
+      if (!a.time) return -1;
+      if (!b.time) return 1;
       return (a.time || '').localeCompare(b.time || '');
     });
 
     return filtered;
-  }, [programs, printConfig, permissions.canViewPriority]);
+  }, [programs, printConfig.selectedIds, printConfig.viewMode]);
 
   const navDate = (days) => {
     const newDate = new Date(currentDate);
@@ -1965,6 +1986,7 @@ User said: "${transcript}"`
           canViewPriority={permissions.canViewPriority}
           viewMode={viewMode}
           isExporting={isExporting}
+          programs={programs}
         />
 
         <CalendarModal 
@@ -2012,15 +2034,6 @@ User said: "${transcript}"`
               <h3 className="text-lg font-bold text-stone-900">
                 {printConfig.viewMode === 'todo' ? 'To-Do List' : 'Programme Schedule'} • {formatDate(currentDate)}
               </h3>
-              
-              {(printConfig.timeFilter !== 'all' || printConfig.priorityFilter !== 'all') && (
-                <p className="text-[11px] text-stone-400 mt-2 font-medium uppercase tracking-wider">
-                  Filtered: 
-                  {printConfig.timeFilter !== 'all' && printConfig.viewMode === 'schedule' && ` ${printConfig.timeFilter === 'am' ? 'Morning Only' : 'Afternoon Only'}`}
-                  {printConfig.timeFilter !== 'all' && printConfig.priorityFilter !== 'all' && printConfig.viewMode === 'schedule' && ' | '}
-                  {printConfig.priorityFilter !== 'all' && ` ${printConfig.priorityFilter.charAt(0).toUpperCase() + printConfig.priorityFilter.slice(1)} Priority Only`}
-                </p>
-              )}
             </div>
 
             {/* Table Container */}
