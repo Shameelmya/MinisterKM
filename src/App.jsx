@@ -2085,7 +2085,7 @@ User said: "${transcript}"`
                               {p.contactNumber && (
                                 <>
                                   <br />
-                                  Mob: <a href={`tel:${p.contactNumber}`} className="text-inherit no-underline">{p.contactNumber}</a>
+                                  Mob: <a href={`tel:${p.contactNumber}`} className="text-blue-600 no-underline">{p.contactNumber}</a>
                                 </>
                               )}
                             </div>
