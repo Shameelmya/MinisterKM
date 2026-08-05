@@ -159,7 +159,7 @@ const LoginCover = () => {
     
     let isValid = false;
     if (selectedRole === ROLES.PS_EDIT) {
-      if (password === 'hisham@edit') isValid = true;
+      if (password === 'shaji@123') isValid = true;
     } else if (selectedRole === ROLES.PS_VIEW && selectedStaff) {
       if (password === selectedStaff.password) isValid = true;
     }
