@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, useMemo, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, initializeFirestore, persistentLocalCache, collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, persistentLocalCache, collection, addDoc, updateDoc, deleteDoc, doc, query, where, getDocs, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 import NotesApp from './NotesApp';
 
 const getLocalDateString = (date) => {
@@ -715,114 +715,248 @@ const CalendarModal = ({ isOpen, onClose, selectedDate, onSelectDate }) => {
   );
 };
 
-const PrintModal = ({ isOpen, onClose, onPrint, canViewPriority, viewMode, isExporting, programs }) => {
-  const [selectedIds, setSelectedIds] = useState([]);
+const PrintModal = ({ isOpen, onClose, onPrint, viewMode, currentDate }) => {
+  const [step, setStep] = useState('mode'); // 'mode', 'dates', 'programs'
+  const [selectedDates, setSelectedDates] = useState([]);
+  const [viewDate, setViewDate] = useState(new Date());
   
-  // Filter by viewMode and sort chronologically
-  const sortedRelevantPrograms = useMemo(() => {
-    const relevant = programs.filter(p => {
-      if (viewMode === 'schedule') return !p.type || p.type === 'schedule';
-      return p.type === 'todo';
-    });
-    
-    return relevant.sort((a, b) => {
-      if (!a.time && !b.time) return (a.createdAt || 0) - (b.createdAt || 0);
-      if (!a.time) return -1; // No time at top
-      if (!b.time) return 1;
-      return a.time.localeCompare(b.time);
-    });
-  }, [programs, viewMode]);
+  const [fetchedData, setFetchedData] = useState({ programs: {}, inCharge: {}, sortedDates: [] });
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isExportingModal, setIsExportingModal] = useState(false);
 
-  // Reset selection when modal opens
+  // Reset when opened
   useEffect(() => {
     if (isOpen) {
-      setSelectedIds(sortedRelevantPrograms.map(p => p.id));
+      setStep('mode');
+      setSelectedDates([]);
+      setViewDate(currentDate || new Date());
+      setFetchedData({ programs: {}, inCharge: {}, sortedDates: [] });
+      setSelectedIds([]);
+      setIsLoading(false);
+      setIsExportingModal(false);
     }
-  }, [isOpen, sortedRelevantPrograms]);
+  }, [isOpen, currentDate]);
+
+  const handleSelectMode = (mode) => {
+    if (mode === 'current') {
+      const dStr = getLocalDateString(currentDate);
+      setSelectedDates([dStr]);
+      fetchDataForDates([dStr]);
+    } else {
+      setStep('dates');
+    }
+  };
+
+  const toggleDate = (dateObj) => {
+    const dStr = getLocalDateString(dateObj);
+    setSelectedDates(prev => prev.includes(dStr) ? prev.filter(d => d !== dStr) : [...prev, dStr]);
+  };
+
+  const handleProceedDates = () => {
+    if (selectedDates.length === 0) return;
+    fetchDataForDates(selectedDates);
+  };
+
+  const fetchDataForDates = async (dates) => {
+    setStep('programs');
+    setIsLoading(true);
+    try {
+      const programsByDate = {};
+      const inChargeByDate = {};
+      const allSelectedIds = [];
+
+      await Promise.all(dates.map(async (dStr) => {
+        const q = query(collection(db, 'programs'), where('date', '==', dStr));
+        const pSnap = await getDocs(q);
+        const progs = pSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        const relevant = progs.filter(p => {
+          if (viewMode === 'schedule') return !p.type || p.type === 'schedule';
+          return p.type === 'todo';
+        }).sort((a, b) => {
+          if (!a.time && !b.time) return (a.createdAt || 0) - (b.createdAt || 0);
+          if (!a.time) return -1;
+          if (!b.time) return 1;
+          return (a.time || '').localeCompare(b.time || '');
+        });
+        
+        programsByDate[dStr] = relevant;
+        allSelectedIds.push(...relevant.map(p => p.id));
+
+        const icSnap = await getDoc(doc(db, 'in_charge', dStr));
+        if (icSnap.exists()) {
+          inChargeByDate[dStr] = icSnap.data();
+        } else {
+          inChargeByDate[dStr] = {
+            pa: { type: 'Adv Hisham', name: 'Adv Hisham', phone: '9744660071' },
+            gunman: { type: 'Yasar', name: 'Yasar', phone: '9947700895' }
+          };
+        }
+      }));
+
+      const sortedDates = [...dates].sort();
+      setFetchedData({ programs: programsByDate, inCharge: inChargeByDate, sortedDates });
+      setSelectedIds(allSelectedIds);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleToggle = (id) => {
-    setSelectedIds(prev => 
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
   const handlePrint = () => {
-    onPrint({ selectedIds, viewMode });
-    onClose();
+    setIsExportingModal(true);
+    const filteredProgramsByDate = {};
+    fetchedData.sortedDates.forEach(dStr => {
+      const filtered = fetchedData.programs[dStr].filter(p => selectedIds.includes(p.id));
+      if (filtered.length > 0) {
+        filteredProgramsByDate[dStr] = filtered;
+      }
+    });
+
+    onPrint({ 
+      groupedPrograms: filteredProgramsByDate, 
+      inChargeByDate: fetchedData.inCharge,
+      sortedDates: fetchedData.sortedDates.filter(d => filteredProgramsByDate[d] && filteredProgramsByDate[d].length > 0),
+      viewMode 
+    });
+    setTimeout(() => onClose(), 1000);
   };
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const days = Array.from({length: 42}, (_, i) => {
+    if (i < firstDay || i >= firstDay + daysInMonth) return null;
+    return new Date(year, month, i - firstDay + 1);
+  });
+  const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const monthsList = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Export ${viewMode === 'todo' ? 'To-Dos' : 'Schedule'}`}>
-      <div className="space-y-4">
-        
-        <div className="flex items-center justify-between px-1">
-          <label className="text-sm font-medium text-stone-700">Select entries to include:</label>
+      {step === 'mode' && (
+        <div className="space-y-4">
+          <p className="text-center text-sm text-stone-600 mb-6">Which dates do you want to export?</p>
+          <button onClick={() => handleSelectMode('current')} className="w-full py-4 bg-[#4a3b32] text-white rounded-xl font-bold hover:bg-[#3a2e26] transition-colors flex flex-col items-center shadow-md">
+            <span>Current Date</span>
+            <span className="text-xs font-normal opacity-80 mt-1">{getLocalDateString(currentDate || new Date())}</span>
+          </button>
+          <button onClick={() => handleSelectMode('custom')} className="w-full py-4 bg-white border-2 border-[#4a3b32] text-[#4a3b32] rounded-xl font-bold hover:bg-stone-50 transition-colors flex flex-col items-center">
+            <span>Custom Dates</span>
+            <span className="text-xs font-normal opacity-80 mt-1">Select multiple days</span>
+          </button>
+        </div>
+      )}
+
+      {step === 'dates' && (
+        <div className="space-y-4 animate-in fade-in duration-300">
+          <div className="flex justify-between items-center bg-stone-100 rounded-lg p-1 mb-2">
+            <button onClick={() => setViewDate(new Date(year, month - 1, 1))} className="p-2 hover:bg-stone-200 rounded-md transition-colors"><IconChevronLeft size={20} /></button>
+            <div className="font-bold text-stone-800">{monthsList[month]} {year}</div>
+            <button onClick={() => setViewDate(new Date(year, month + 1, 1))} className="p-2 hover:bg-stone-200 rounded-md transition-colors"><IconChevronRight size={20} /></button>
+          </div>
+          
+          <div className="grid grid-cols-7 gap-1 text-center mb-1">
+            {weekDays.map(day => <div key={day} className="text-xs font-semibold text-stone-400 py-1">{day}</div>)}
+          </div>
+          <div className="grid grid-cols-7 gap-1 mb-4">
+            {days.map((d, i) => {
+              if (!d) return <div key={i} className="h-10" />;
+              const dStr = getLocalDateString(d);
+              const isSelected = selectedDates.includes(dStr);
+              return (
+                <button
+                  key={i}
+                  onClick={() => toggleDate(d)}
+                  className={`h-10 relative w-full rounded-xl flex items-center justify-center text-sm font-medium transition-colors ${isSelected ? 'bg-[#4a3b32] text-white shadow-md' : 'text-stone-700 hover:bg-stone-100'}`}
+                >
+                  {d.getDate()}
+                </button>
+              );
+            })}
+          </div>
           <div className="flex gap-2">
-            <button 
-              onClick={() => setSelectedIds(sortedRelevantPrograms.map(p => p.id))}
-              className="text-xs font-semibold text-[#4a3b32] hover:underline"
-            >
-              Select All
-            </button>
-            <span className="text-stone-300">|</span>
-            <button 
-              onClick={() => setSelectedIds([])}
-              className="text-xs font-semibold text-stone-500 hover:text-stone-800 hover:underline"
-            >
-              Unselect All
+            <button onClick={() => setStep('mode')} className="flex-1 py-3 bg-stone-100 text-stone-700 rounded-xl font-medium hover:bg-stone-200 transition-colors">Back</button>
+            <button onClick={handleProceedDates} disabled={selectedDates.length === 0} className="flex-1 py-3 bg-[#4a3b32] text-white rounded-xl font-medium hover:bg-[#3a2e26] transition-colors disabled:opacity-50">Proceed ({selectedDates.length})</button>
+          </div>
+        </div>
+      )}
+
+      {step === 'programs' && (
+        <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
+          <div className="flex items-center justify-between px-1">
+            <label className="text-sm font-medium text-stone-700">Select entries to include:</label>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setSelectedIds(fetchedData.sortedDates.flatMap(d => fetchedData.programs[d].map(p => p.id)))}
+                className="text-xs font-semibold text-[#4a3b32] hover:underline"
+              >Select All</button>
+              <span className="text-stone-300">|</span>
+              <button 
+                onClick={() => setSelectedIds([])}
+                className="text-xs font-semibold text-stone-500 hover:text-stone-800 hover:underline"
+              >Unselect All</button>
+            </div>
+          </div>
+
+          <div className="max-h-[40vh] overflow-y-auto border border-stone-200 rounded-xl bg-stone-50/50 p-2 space-y-4">
+            {isLoading ? (
+              <div className="flex justify-center py-8"><div className="w-8 h-8 border-4 border-stone-200 border-t-[#4a3b32] rounded-full animate-spin"></div></div>
+            ) : fetchedData.sortedDates.length === 0 || fetchedData.sortedDates.every(d => fetchedData.programs[d].length === 0) ? (
+              <p className="text-sm text-center text-stone-500 py-4">No entries found.</p>
+            ) : (
+              fetchedData.sortedDates.map(dStr => {
+                const progs = fetchedData.programs[dStr];
+                if (progs.length === 0) return null;
+                
+                return (
+                  <div key={dStr} className="space-y-1">
+                    <div className="sticky top-0 bg-stone-50/95 backdrop-blur-sm z-10 py-1.5 px-2 border-b border-stone-200 mb-1">
+                      <span className="text-xs font-bold text-stone-500 uppercase tracking-widest">{formatDate(new Date(dStr))}</span>
+                    </div>
+                    {progs.map(p => {
+                      let displayTime = "All Day";
+                      if (p.time && p.type !== 'todo') {
+                        const [h, m] = p.time.split(':');
+                        const hour = parseInt(h, 10);
+                        const ampm = hour >= 12 ? 'PM' : 'AM';
+                        displayTime = `${hour % 12 || 12}:${m} ${ampm}`;
+                      }
+
+                      return (
+                        <label key={p.id} className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all ${selectedIds.includes(p.id) ? 'bg-white shadow-sm border border-stone-200' : 'hover:bg-stone-100 border border-transparent'}`}>
+                          <div className="pt-0.5">
+                            <input type="checkbox" checked={selectedIds.includes(p.id)} onChange={() => handleToggle(p.id)} className="w-4 h-4 text-[#4a3b32] focus:ring-[#4a3b32] border-stone-300 rounded cursor-pointer" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-medium truncate ${selectedIds.includes(p.id) ? 'text-stone-900' : 'text-stone-500'}`}>{p.eventName}</p>
+                            {viewMode === 'schedule' && <p className={`text-xs mt-0.5 ${selectedIds.includes(p.id) ? 'text-stone-500' : 'text-stone-400'}`}>{displayTime}</p>}
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                );
+              })
+            )}
+          </div>
+          
+          <div className="flex gap-2">
+            <button onClick={() => setStep('mode')} className="flex-1 py-3 bg-stone-100 text-stone-700 rounded-xl font-medium hover:bg-stone-200 transition-colors">Back</button>
+            <button onClick={handlePrint} disabled={isExportingModal || selectedIds.length === 0} className="flex-1 py-3 bg-[#4a3b32] text-white rounded-xl font-medium hover:bg-[#3a2e26] transition-colors flex justify-center items-center gap-2 disabled:opacity-50">
+              {isExportingModal ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <IconPrinter size={18} />}
+              {isExportingModal ? 'Generating...' : `Print (${selectedIds.length})`}
             </button>
           </div>
         </div>
-
-        <div className="max-h-[40vh] overflow-y-auto border border-stone-200 rounded-xl bg-stone-50/50 p-2 space-y-1">
-          {sortedRelevantPrograms.length === 0 ? (
-            <p className="text-sm text-center text-stone-500 py-4">No entries found for this day.</p>
-          ) : (
-            sortedRelevantPrograms.map(p => {
-              let displayTime = "All Day";
-              if (p.time && p.type !== 'todo') {
-                const [h, m] = p.time.split(':');
-                const hour = parseInt(h, 10);
-                const ampm = hour >= 12 ? 'PM' : 'AM';
-                const displayHour = hour % 12 || 12;
-                displayTime = `${displayHour}:${m} ${ampm}`;
-              }
-
-              return (
-                <label key={p.id} className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all ${selectedIds.includes(p.id) ? 'bg-white shadow-sm border border-stone-200' : 'hover:bg-stone-100 border border-transparent'}`}>
-                  <div className="pt-0.5">
-                    <input 
-                      type="checkbox" 
-                      checked={selectedIds.includes(p.id)}
-                      onChange={() => handleToggle(p.id)}
-                      className="w-4 h-4 text-[#4a3b32] focus:ring-[#4a3b32] border-stone-300 rounded cursor-pointer"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${selectedIds.includes(p.id) ? 'text-stone-900' : 'text-stone-500'}`}>
-                      {p.eventName}
-                    </p>
-                    {viewMode === 'schedule' && (
-                      <p className={`text-xs mt-0.5 ${selectedIds.includes(p.id) ? 'text-stone-500' : 'text-stone-400'}`}>
-                        {displayTime}
-                      </p>
-                    )}
-                  </div>
-                </label>
-              );
-            })
-          )}
-        </div>
-        
-        <button
-          onClick={handlePrint}
-          disabled={isExporting || selectedIds.length === 0}
-          className="w-full py-3.5 mt-2 bg-[#4a3b32] text-white rounded-xl font-medium hover:bg-[#3a2e26] transition-colors flex justify-center items-center gap-2 disabled:opacity-50"
-        >
-          {isExporting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <IconPrinter size={18} />}
-          {isExporting ? 'Generating PDF...' : `Download PDF (${selectedIds.length})`}
-        </button>
-      </div>
+      )}
     </Modal>
   );
 };
@@ -1323,16 +1457,25 @@ const SettingsModal = ({ isOpen, onClose }) => {
   );
 };
 
-const InChargeModal = ({ isOpen, onClose, inChargeInfo, setInChargeInfo }) => {
+const InChargeModal = ({ isOpen, onClose, inChargeInfo, dateStr }) => {
   const [localInfo, setLocalInfo] = useState(inChargeInfo);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (isOpen) setLocalInfo(inChargeInfo);
   }, [isOpen, inChargeInfo]);
 
-  const handleSave = () => {
-    setInChargeInfo(localInfo);
-    onClose();
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await setDoc(doc(db, 'in_charge', dateStr), localInfo);
+      onClose();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const updateField = (section, field, value) => {
@@ -1411,8 +1554,8 @@ const InChargeModal = ({ isOpen, onClose, inChargeInfo, setInChargeInfo }) => {
           )}
         </div>
 
-        <button onClick={handleSave} className="w-full py-3.5 bg-[#4a3b32] text-white rounded-xl font-medium hover:bg-[#3a2e26] transition-colors">
-          Save Details
+        <button onClick={handleSave} disabled={isSaving} className="w-full py-3.5 bg-[#4a3b32] text-white rounded-xl font-medium hover:bg-[#3a2e26] transition-colors disabled:opacity-50">
+          {isSaving ? 'Saving...' : 'Save Details'}
         </button>
       </div>
     </Modal>
@@ -1423,6 +1566,7 @@ const MainApp = () => {
   const { user, logout } = useContext(AuthContext);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [programsCache, setProgramsCache] = useState({});
+  const [inChargeCache, setInChargeCache] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
@@ -1451,10 +1595,6 @@ const MainApp = () => {
   const [voicePrefill, setVoicePrefill] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   
-  const [inChargeInfo, setInChargeInfo] = useState({
-    pa: { type: 'Adv Hisham', name: 'Adv Hisham', phone: '9744660071' },
-    gunman: { type: 'Yasar', name: 'Yasar', phone: '9947700895' }
-  });
   const [isInChargeOpen, setIsInChargeOpen] = useState(false);
 
   const recognitionRef = useRef(null);
@@ -1499,15 +1639,28 @@ const MainApp = () => {
       const data = [];
       snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
       setProgramsCache(prev => ({ ...prev, [dateStr]: data }));
+    }, (err) => {
+      console.error("Firestore programs error:", err);
+    });
+
+    const inChargeUnsubscribe = onSnapshot(doc(db, 'in_charge', dateStr), (docSnap) => {
+      if (docSnap.exists()) {
+        setInChargeCache(prev => ({ ...prev, [dateStr]: docSnap.data() }));
+      } else {
+        setInChargeCache(prev => ({ ...prev, [dateStr]: null }));
+      }
       setIsLoading(false);
       setIsRefreshing(false);
     }, (err) => {
-      console.error("Firestore error:", err);
+      console.error("Firestore in_charge error:", err);
       setIsLoading(false);
       setIsRefreshing(false);
     });
     
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      inChargeUnsubscribe();
+    };
   }, [dateStr]);
 
   const fetchPrograms = (dateKey, forceRefresh = false) => {
@@ -2109,17 +2262,18 @@ User said: "${transcript}"`
           isOpen={isPrintOpen} 
           onClose={() => closeModal('#export', setIsPrintOpen)}
           onPrint={handlePdfExport}
-          canViewPriority={permissions.canViewPriority}
           viewMode={viewMode}
-          isExporting={isExporting}
-          programs={programs}
+          currentDate={currentDate}
         />
 
         <InChargeModal 
           isOpen={isInChargeOpen}
           onClose={() => closeModal('#incharge', setIsInChargeOpen)}
-          inChargeInfo={inChargeInfo}
-          setInChargeInfo={setInChargeInfo}
+          inChargeInfo={inChargeCache[dateStr] || {
+            pa: { type: 'Adv Hisham', name: 'Adv Hisham', phone: '9744660071' },
+            gunman: { type: 'Yasar', name: 'Yasar', phone: '9947700895' }
+          }}
+          dateStr={dateStr}
         />
 
         <CalendarModal 
@@ -2159,120 +2313,115 @@ User said: "${transcript}"`
         {/* PDF EXPORT CONTENT - HIDDEN BEHIND APP */}
         <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-[-50] overflow-hidden">
           <div className="w-[640px] mx-auto bg-white text-black p-8 font-sans" id="pdf-export-content">
-            {/* Header */}
+            {/* Main Header */}
             <div className="mb-6 flex flex-col items-center border-b border-stone-200 pb-6">
               <h1 className="text-3xl font-bold tracking-tight text-[#4a3b32] mb-1.5">KM Shaji</h1>
               <h2 className="text-base font-normal text-stone-600 mb-4">Hon. LSG Department Minister</h2>
-              
               <h3 className="text-lg font-bold text-stone-900">
-                {printConfig.viewMode === 'todo' ? 'To-Do List' : 'Programme Schedule'} • {formatDate(currentDate)}
+                {printConfig.viewMode === 'todo' ? 'To-Do List' : 'Programme Schedule'}
               </h3>
             </div>
 
-            {/* In Charge Details Header (Only in Schedule View) */}
-            {printConfig.viewMode === 'schedule' && (inChargeInfo.pa.name || inChargeInfo.gunman.name) && (
-              <table style={{ width: '100%', marginBottom: '20px', border: '1px solid #d6d3d1', backgroundColor: '#fafaf9', borderCollapse: 'collapse' }}>
-                <tbody>
-                  <tr>
-                    <td style={{ padding: '14px 16px', textAlign: 'left', verticalAlign: 'top', width: '50%' }}>
-                      {inChargeInfo.pa.name && (
-                        <div>
-                          <span style={{ fontWeight: 'bold', color: '#292524', fontSize: '13px' }}>PA In Charge:</span><br/>
-                          <span style={{ color: '#44403c', fontSize: '13px' }}>{inChargeInfo.pa.name}</span>
-                          {inChargeInfo.pa.phone && (
+            {/* Iterate over selected dates */}
+            {printConfig.sortedDates && printConfig.sortedDates.map((dateStr, index) => {
+              const inCharge = printConfig.inChargeByDate?.[dateStr];
+              const progs = printConfig.groupedPrograms?.[dateStr] || [];
+              if (progs.length === 0) return null;
+
+              return (
+                <div key={dateStr} className="mb-8" style={{ pageBreakInside: 'avoid' }}>
+                  {/* Date Header */}
+                  <h4 style={{ fontSize: '18px', fontWeight: 'bold', color: '#292524', marginBottom: '12px', borderBottom: '2px solid #d6d3d1', paddingBottom: '4px' }}>
+                    {formatDate(new Date(dateStr))}
+                  </h4>
+
+                  {/* PA and Gunman details */}
+                  {printConfig.viewMode === 'schedule' && inCharge && (inCharge.pa?.name || inCharge.gunman?.name) && (
+                    <div style={{ marginBottom: '16px', backgroundColor: '#fafaf9', padding: '12px', border: '1px solid #e7e5e4', borderRadius: '6px' }}>
+                      {inCharge.pa?.name && (
+                        <div style={{ fontSize: '13px', color: '#44403c', marginBottom: inCharge.gunman?.name ? '6px' : '0' }}>
+                          <span style={{ fontWeight: 'bold', color: '#292524' }}>PA in Charge : </span>
+                          <span>{inCharge.pa.name}</span>
+                          {inCharge.pa.phone && (
                             <>
-                              <br/>
-                              <span style={{ fontSize: '13px', color: '#44403c' }}>Mob: </span>
-                              <a href={`tel:${inChargeInfo.pa.phone}`} style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600', fontSize: '13px' }}>{inChargeInfo.pa.phone}</a>
+                              <span style={{ marginLeft: '12px' }}>Phone : </span>
+                              <a href={`tel:${inCharge.pa.phone}`} style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}>{inCharge.pa.phone}</a>
                             </>
                           )}
                         </div>
                       )}
-                    </td>
-                    <td style={{ padding: '14px 16px', textAlign: 'right', verticalAlign: 'top', width: '50%' }}>
-                      {inChargeInfo.gunman.name && (
-                        <div>
-                          <span style={{ fontWeight: 'bold', color: '#292524', fontSize: '13px' }}>Gunman In Charge:</span><br/>
-                          <span style={{ color: '#44403c', fontSize: '13px' }}>{inChargeInfo.gunman.name}</span>
-                          {inChargeInfo.gunman.phone && (
+                      {inCharge.gunman?.name && (
+                        <div style={{ fontSize: '13px', color: '#44403c' }}>
+                          <span style={{ fontWeight: 'bold', color: '#292524' }}>Gun man in Charge : </span>
+                          <span>{inCharge.gunman.name}</span>
+                          {inCharge.gunman.phone && (
                             <>
-                              <br/>
-                              <span style={{ fontSize: '13px', color: '#44403c' }}>Mob: </span>
-                              <a href={`tel:${inChargeInfo.gunman.phone}`} style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600', fontSize: '13px' }}>{inChargeInfo.gunman.phone}</a>
+                              <span style={{ marginLeft: '12px' }}>Phone : </span>
+                              <a href={`tel:${inCharge.gunman.phone}`} style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}>{inCharge.gunman.phone}</a>
                             </>
                           )}
                         </div>
                       )}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            )}
-
-            {/* Table Container */}
-            <div className="mb-8">
-              <table className="w-full text-center border-separate border-spacing-0 bg-white border-t border-l border-stone-400">
-                <thead className="bg-[#4a3b32] text-white">
-                  <tr>
-                    {printConfig.viewMode === 'schedule' && (
-                      <th className="pt-1.5 pb-3 px-3 font-bold text-[12px] tracking-wide border-b border-r border-stone-400 w-24 align-middle">Time</th>
-                    )}
-                    <th className="pt-1.5 pb-3 px-3 font-bold text-[12px] tracking-wide border-b border-r border-stone-400 align-middle">
-                      {printConfig.viewMode === 'schedule' ? 'Programme' : 'Description'}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white">
-                  {printPrograms.length === 0 ? (
-                    <tr>
-                      <td colSpan={printConfig.viewMode === 'schedule' ? "2" : "1"} className="p-8 text-center text-stone-500 font-medium border-b border-r border-stone-400">
-                        No entries scheduled for this day.
-                      </td>
-                    </tr>
-                  ) : (
-                    printPrograms.map(p => {
-                      let displayTime = "—";
-                      if (p.time && p.type !== 'todo') {
-                        const [h, m] = p.time.split(':');
-                        const hour = parseInt(h, 10);
-                        const ampm = hour >= 12 ? 'PM' : 'AM';
-                        const displayHour = hour % 12 || 12;
-                        displayTime = `${displayHour}:${m} ${ampm}`;
-                      }
-
-                      return (
-                        <tr key={p.id} className="page-break-inside-avoid">
-                          {printConfig.viewMode === 'schedule' && (
-                            <td className="pt-2 pb-4 px-4 font-bold text-base text-black border-b border-r border-stone-400 align-middle text-left whitespace-nowrap">{displayTime}</td>
-                          )}
-                          <td className="pt-2 pb-4 px-4 align-middle text-left text-base border-b border-r border-stone-400 text-black">
-                            {p.completed && (
-                              <div className="mb-1.5">
-                                <span className="text-[9px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Completed</span>
-                              </div>
-                            )}
-                            <div className={p.completed ? "line-through text-stone-400 whitespace-pre-wrap leading-snug" : "font-normal leading-snug whitespace-pre-wrap"}>
-                              {p.eventName}
-                              {p.coName && `\nC/o: ${p.coName}`}
-                              {p.contactNumber && (
-                                <>
-                                  <br />
-                                  Mob: <a href={`tel:${p.contactNumber}`} className="text-blue-600 no-underline">{p.contactNumber}</a>
-                                </>
-                              )}
-                            </div>
-                            {p.type === 'todo' && p.link && <div className="font-normal break-all mt-1">{p.link}</div>}
-                          </td>
-                        </tr>
-                      );
-                    })
+                    </div>
                   )}
-                </tbody>
-              </table>
-            </div>
-            
+
+                  {/* Table for this Date */}
+                  <table className="w-full text-center border-separate border-spacing-0 bg-white border-t border-l border-stone-400">
+                    <thead className="bg-[#4a3b32] text-white">
+                      <tr>
+                        {printConfig.viewMode === 'schedule' && (
+                          <th className="pt-1.5 pb-3 px-3 font-bold text-[12px] tracking-wide border-b border-r border-stone-400 w-24 align-middle">Time</th>
+                        )}
+                        <th className="pt-1.5 pb-3 px-3 font-bold text-[12px] tracking-wide border-b border-r border-stone-400 align-middle">
+                          {printConfig.viewMode === 'schedule' ? 'Programme' : 'Description'}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white">
+                      {progs.map(p => {
+                        let displayTime = "—";
+                        if (p.time && p.type !== 'todo') {
+                          const [h, m] = p.time.split(':');
+                          const hour = parseInt(h, 10);
+                          const ampm = hour >= 12 ? 'PM' : 'AM';
+                          const displayHour = hour % 12 || 12;
+                          displayTime = `${displayHour}:${m} ${ampm}`;
+                        }
+
+                        return (
+                          <tr key={p.id} className="page-break-inside-avoid">
+                            {printConfig.viewMode === 'schedule' && (
+                              <td className="pt-2 pb-4 px-4 font-bold text-base text-black border-b border-r border-stone-400 align-middle text-left whitespace-nowrap">{displayTime}</td>
+                            )}
+                            <td className="pt-2 pb-4 px-4 align-middle text-left text-base border-b border-r border-stone-400 text-black">
+                              {p.completed && (
+                                <div className="mb-1.5">
+                                  <span className="text-[9px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Completed</span>
+                                </div>
+                              )}
+                              <div className={p.completed ? "line-through text-stone-400 whitespace-pre-wrap leading-snug" : "font-normal leading-snug whitespace-pre-wrap"}>
+                                {p.eventName}
+                                {p.coName && `\nC/o: ${p.coName}`}
+                                {p.contactNumber && (
+                                  <>
+                                    <br />
+                                    Mob: <a href={`tel:${p.contactNumber}`} className="text-blue-600 no-underline">{p.contactNumber}</a>
+                                  </>
+                                )}
+                              </div>
+                              {p.type === 'todo' && p.link && <div className="font-normal break-all mt-1">{p.link}</div>}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })}
+
             {/* Footer */}
-            <div className="pt-4 border-t border-stone-200 flex justify-between items-center text-[10px] text-stone-400 uppercase tracking-widest">
+            <div className="pt-4 border-t border-stone-200 flex justify-between items-center text-[10px] text-stone-400 uppercase tracking-widest mt-8">
               <span>Official Schedule Document</span>
               <span>Generated on {new Date().toLocaleString('en-IN')}</span>
             </div>
