@@ -2158,32 +2158,40 @@ User said: "${transcript}"`
 
             {/* In Charge Details Header (Only in Schedule View) */}
             {printConfig.viewMode === 'schedule' && (inChargeInfo.pa.name || inChargeInfo.gunman.name) && (
-              <div className="mb-6 flex justify-between items-start text-sm border border-stone-200 rounded-lg p-4 bg-stone-50">
-                {inChargeInfo.pa.name && (
-                  <div>
-                    <span className="font-bold text-stone-800">PA In Charge:</span><br/>
-                    <span className="text-stone-700">{inChargeInfo.pa.name}</span>
-                    {inChargeInfo.pa.phone && (
-                      <>
-                        <br/>
-                        Mob: <a href={`tel:${inChargeInfo.pa.phone}`} className="text-blue-600 no-underline font-medium">{inChargeInfo.pa.phone}</a>
-                      </>
-                    )}
-                  </div>
-                )}
-                {inChargeInfo.gunman.name && (
-                  <div className="text-right">
-                    <span className="font-bold text-stone-800">Gunman In Charge:</span><br/>
-                    <span className="text-stone-700">{inChargeInfo.gunman.name}</span>
-                    {inChargeInfo.gunman.phone && (
-                      <>
-                        <br/>
-                        Mob: <a href={`tel:${inChargeInfo.gunman.phone}`} className="text-blue-600 no-underline font-medium">{inChargeInfo.gunman.phone}</a>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+              <table className="w-full mb-6 border border-stone-300 bg-stone-50">
+                <tbody>
+                  <tr>
+                    <td className="p-4 text-left align-top w-1/2">
+                      {inChargeInfo.pa.name && (
+                        <div>
+                          <span className="font-bold text-stone-800 text-sm">PA In Charge:</span><br/>
+                          <span className="text-stone-700 text-sm">{inChargeInfo.pa.name}</span>
+                          {inChargeInfo.pa.phone && (
+                            <>
+                              <br/>
+                              <span className="text-sm">Mob: </span><a href={`tel:${inChargeInfo.pa.phone}`} className="text-blue-600 no-underline font-medium text-sm">{inChargeInfo.pa.phone}</a>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-4 text-right align-top w-1/2">
+                      {inChargeInfo.gunman.name && (
+                        <div>
+                          <span className="font-bold text-stone-800 text-sm">Gunman In Charge:</span><br/>
+                          <span className="text-stone-700 text-sm">{inChargeInfo.gunman.name}</span>
+                          {inChargeInfo.gunman.phone && (
+                            <>
+                              <br/>
+                              <span className="text-sm">Mob: </span><a href={`tel:${inChargeInfo.gunman.phone}`} className="text-blue-600 no-underline font-medium text-sm">{inChargeInfo.gunman.phone}</a>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             )}
 
             {/* Table Container */}
