@@ -1364,9 +1364,9 @@ const InChargeModal = ({ isOpen, onClose, inChargeInfo, setInChargeInfo }) => {
             ))}
           </div>
           {localInfo.pa.type === 'Other' && (
-            <div className="flex gap-2">
-              <input type="text" placeholder="Name" value={localInfo.pa.name} onChange={e => updateField('pa', 'name', e.target.value)} className="flex-1 px-3 py-2 border border-stone-200 rounded-lg text-sm focus:border-[#4a3b32] outline-none" />
-              <input type="tel" placeholder="Phone" value={localInfo.pa.phone} onChange={e => updateField('pa', 'phone', e.target.value)} className="flex-1 px-3 py-2 border border-stone-200 rounded-lg text-sm focus:border-[#4a3b32] outline-none" />
+            <div className="flex flex-col gap-2">
+              <input type="text" placeholder="Name" value={localInfo.pa.name} onChange={e => updateField('pa', 'name', e.target.value)} className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:border-[#4a3b32] outline-none" />
+              <input type="tel" placeholder="Phone" value={localInfo.pa.phone} onChange={e => updateField('pa', 'phone', e.target.value)} className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:border-[#4a3b32] outline-none" />
             </div>
           )}
         </div>
@@ -1391,9 +1391,9 @@ const InChargeModal = ({ isOpen, onClose, inChargeInfo, setInChargeInfo }) => {
             ))}
           </div>
           {localInfo.gunman.type === 'Other' && (
-            <div className="flex gap-2">
-              <input type="text" placeholder="Name" value={localInfo.gunman.name} onChange={e => updateField('gunman', 'name', e.target.value)} className="flex-1 px-3 py-2 border border-stone-200 rounded-lg text-sm focus:border-[#4a3b32] outline-none" />
-              <input type="tel" placeholder="Phone" value={localInfo.gunman.phone} onChange={e => updateField('gunman', 'phone', e.target.value)} className="flex-1 px-3 py-2 border border-stone-200 rounded-lg text-sm focus:border-[#4a3b32] outline-none" />
+            <div className="flex flex-col gap-2">
+              <input type="text" placeholder="Name" value={localInfo.gunman.name} onChange={e => updateField('gunman', 'name', e.target.value)} className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:border-[#4a3b32] outline-none" />
+              <input type="tel" placeholder="Phone" value={localInfo.gunman.phone} onChange={e => updateField('gunman', 'phone', e.target.value)} className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:border-[#4a3b32] outline-none" />
             </div>
           )}
         </div>
@@ -1440,7 +1440,7 @@ const MainApp = () => {
   
   const [inChargeInfo, setInChargeInfo] = useState({
     pa: { type: 'Adv Hisham', name: 'Adv Hisham', phone: '9744660071' },
-    gunman: { type: '', name: '', phone: '' }
+    gunman: { type: 'Yasar', name: 'Yasar', phone: '9947700895' }
   });
   const [isInChargeOpen, setIsInChargeOpen] = useState(false);
 
