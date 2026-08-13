@@ -114,6 +114,7 @@ const LoginCover = () => {
   const [selectedRole, setSelectedRole] = useState(null);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   
   // Staff specific states
   const [staffList, setStaffList] = useState([]);
@@ -165,7 +166,7 @@ const LoginCover = () => {
     }
 
     if (isValid) {
-      login(selectedRole, selectedStaff ? selectedStaff.name : 'Admin');
+      login(selectedRole, selectedStaff ? selectedStaff.name : 'Admin', selectedRole === ROLES.PS_EDIT && rememberMe);
     } else {
       setError('Incorrect password');
     }
@@ -273,6 +274,18 @@ const LoginCover = () => {
                 />
                 {error && <p className="text-red-600 text-xs mt-2 font-medium">{error}</p>}
               </div>
+
+              {selectedRole === ROLES.PS_EDIT && (
+                <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 text-[#4a3b32] focus:ring-[#4a3b32] border-stone-300 rounded cursor-pointer"
+                  />
+                  <span className="text-sm text-stone-600 group-hover:text-stone-800 transition-colors">Stay logged in on this device</span>
+                </label>
+              )}
               
               <button
                 type="submit"
@@ -2272,6 +2285,10 @@ User said: "${transcript}"`
 export default function App() {
   const [user, setUser] = useState(() => {
     try {
+      // Check localStorage first (for remembered admin sessions)
+      const rememberedUser = localStorage.getItem('appUser_remembered');
+      if (rememberedUser) return JSON.parse(rememberedUser);
+      // Then check sessionStorage (for current-tab sessions)
       const savedUser = sessionStorage.getItem('appUser');
       return savedUser ? JSON.parse(savedUser) : null;
     } catch (e) {
@@ -2279,15 +2296,21 @@ export default function App() {
     }
   });
 
-  const login = (role, name = 'Admin') => {
+  const login = (role, name = 'Admin', rememberMe = false) => {
     const newUser = { id: 'local-user', role, name };
     setUser(newUser);
     sessionStorage.setItem('appUser', JSON.stringify(newUser));
+    // Only persist to localStorage if admin chose "Stay logged in"
+    if (rememberMe && role === 'ps_edit') {
+      localStorage.setItem('appUser_remembered', JSON.stringify(newUser));
+    }
   };
 
   const logout = () => {
     setUser(null);
     sessionStorage.removeItem('appUser');
+    // Always clear remembered session on explicit logout
+    localStorage.removeItem('appUser_remembered');
   };
 
   return (
