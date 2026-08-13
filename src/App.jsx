@@ -769,9 +769,14 @@ const PrintModal = ({ isOpen, onClose, onPrint, viewMode, currentDate, programsC
       await Promise.all(dates.map(async (dStr) => {
         let progs = programsCache?.[dStr];
         if (!progs) {
-          const q = query(collection(db, 'programs'), where('date', '==', dStr));
-          const pSnap = await getDocs(q);
-          progs = pSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          try {
+            const q = query(collection(db, 'programs'), where('date', '==', dStr));
+            const pSnap = await getDocs(q);
+            progs = pSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          } catch (err) {
+            console.error("Error fetching programs:", err);
+            progs = [];
+          }
         }
         
         const relevant = progs.filter(p => {
@@ -789,8 +794,13 @@ const PrintModal = ({ isOpen, onClose, onPrint, viewMode, currentDate, programsC
 
         let icData = inChargeCache?.[dStr];
         if (icData === undefined) {
-          const icSnap = await getDoc(doc(db, 'in_charge', dStr));
-          icData = icSnap.exists() ? icSnap.data() : null;
+          try {
+            const icSnap = await getDoc(doc(db, 'in_charge', dStr));
+            icData = icSnap.exists() ? icSnap.data() : null;
+          } catch (err) {
+            console.error("Error fetching in_charge:", err);
+            icData = null;
+          }
         }
 
         if (icData) {
