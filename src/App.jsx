@@ -2352,33 +2352,33 @@ User said: "${transcript}"`
               return (
                 <div key={dateStr} className="mb-8" style={{ pageBreakInside: 'avoid' }}>
                   {/* Date Header */}
-                  <h4 style={{ fontSize: '18px', fontWeight: 'bold', color: '#292524', marginBottom: '12px', borderBottom: '2px solid #d6d3d1', paddingBottom: '4px' }}>
+                  <h4 style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold', color: '#292524', marginBottom: '4px' }}>
                     {formatDate(new Date(dateStr))}
                   </h4>
 
                   {/* PA and Gunman details */}
                   {printConfig.viewMode === 'schedule' && inCharge && (inCharge.pa?.name || inCharge.gunman?.name) && (
-                    <div style={{ marginBottom: '16px', backgroundColor: '#fafaf9', padding: '12px', border: '1px solid #e7e5e4', borderRadius: '6px' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '16px' }}>
                       {inCharge.pa?.name && (
-                        <div style={{ fontSize: '13px', color: '#44403c', marginBottom: inCharge.gunman?.name ? '6px' : '0' }}>
-                          <span style={{ fontWeight: 'bold', color: '#292524' }}>PA in Charge : </span>
-                          <span>{inCharge.pa.name}</span>
+                        <div style={{ fontSize: '15px', color: '#44403c', marginBottom: inCharge.gunman?.name ? '4px' : '0' }}>
+                          <span style={{ fontWeight: 'normal', color: '#292524' }}>PA in Charge : </span>
+                          <span style={{ fontWeight: 'bold' }}>{inCharge.pa.name}</span>
                           {inCharge.pa.phone && (
                             <>
-                              <span style={{ marginLeft: '12px' }}>Phone : </span>
-                              <a href={`tel:${inCharge.pa.phone}`} style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}>{inCharge.pa.phone}</a>
+                              <span style={{ marginLeft: '12px', fontWeight: 'normal' }}>Phone : </span>
+                              <a href={`tel:${inCharge.pa.phone}`} style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 'bold' }}>{inCharge.pa.phone}</a>
                             </>
                           )}
                         </div>
                       )}
                       {inCharge.gunman?.name && (
-                        <div style={{ fontSize: '13px', color: '#44403c' }}>
-                          <span style={{ fontWeight: 'bold', color: '#292524' }}>Gun man in Charge : </span>
-                          <span>{inCharge.gunman.name}</span>
+                        <div style={{ fontSize: '15px', color: '#44403c' }}>
+                          <span style={{ fontWeight: 'normal', color: '#292524' }}>Gun man in Charge : </span>
+                          <span style={{ fontWeight: 'bold' }}>{inCharge.gunman.name}</span>
                           {inCharge.gunman.phone && (
                             <>
-                              <span style={{ marginLeft: '12px' }}>Phone : </span>
-                              <a href={`tel:${inCharge.gunman.phone}`} style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}>{inCharge.gunman.phone}</a>
+                              <span style={{ marginLeft: '12px', fontWeight: 'normal' }}>Phone : </span>
+                              <a href={`tel:${inCharge.gunman.phone}`} style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 'bold' }}>{inCharge.gunman.phone}</a>
                             </>
                           )}
                         </div>
