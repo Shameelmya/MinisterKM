@@ -1354,9 +1354,12 @@ const InChargeModal = ({ isOpen, onClose, inChargeInfo, setInChargeInfo }) => {
                   type="radio" 
                   checked={localInfo.pa.type === opt.label} 
                   onChange={() => setLocalInfo(prev => ({ ...prev, pa: { type: opt.label, name: opt.name, phone: opt.phone } }))}
-                  className="w-4 h-4 text-[#4a3b32] focus:ring-[#4a3b32] border-stone-300"
+                  className="w-4 h-4 text-[#4a3b32] focus:ring-[#4a3b32] border-stone-300 flex-shrink-0"
                 />
-                <span className={`ml-3 text-sm font-medium ${localInfo.pa.type === opt.label ? 'text-[#4a3b32]' : 'text-stone-700'}`}>{opt.label}</span>
+                <div className="ml-3">
+                  <span className={`text-sm font-medium block ${localInfo.pa.type === opt.label ? 'text-[#4a3b32]' : 'text-stone-700'}`}>{opt.label}</span>
+                  {opt.phone && <span className={`text-[10px] block ${localInfo.pa.type === opt.label ? 'text-[#4a3b32]/80' : 'text-stone-500'}`}>{opt.phone}</span>}
+                </div>
               </label>
             ))}
           </div>
@@ -1378,9 +1381,12 @@ const InChargeModal = ({ isOpen, onClose, inChargeInfo, setInChargeInfo }) => {
                   type="radio" 
                   checked={localInfo.gunman.type === opt.label} 
                   onChange={() => setLocalInfo(prev => ({ ...prev, gunman: { type: opt.label, name: opt.name, phone: opt.phone } }))}
-                  className="w-4 h-4 text-[#4a3b32] focus:ring-[#4a3b32] border-stone-300"
+                  className="w-4 h-4 text-[#4a3b32] focus:ring-[#4a3b32] border-stone-300 flex-shrink-0"
                 />
-                <span className={`ml-3 text-sm font-medium ${localInfo.gunman.type === opt.label ? 'text-[#4a3b32]' : 'text-stone-700'}`}>{opt.label}</span>
+                <div className="ml-3">
+                  <span className={`text-sm font-medium block ${localInfo.gunman.type === opt.label ? 'text-[#4a3b32]' : 'text-stone-700'}`}>{opt.label}</span>
+                  {opt.phone && <span className={`text-[10px] block ${localInfo.gunman.type === opt.label ? 'text-[#4a3b32]/80' : 'text-stone-500'}`}>{opt.phone}</span>}
+                </div>
               </label>
             ))}
           </div>
