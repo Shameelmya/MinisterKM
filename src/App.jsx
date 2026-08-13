@@ -2352,10 +2352,13 @@ User said: "${transcript}"`
               return (
                 <div key={dateStr} className="mb-8" style={{ pageBreakInside: 'avoid' }}>
                   {/* Date Header */}
-                  <div style={{ textAlign: 'center', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#292524', borderBottom: '1px solid #78716c', paddingBottom: '4px' }}>
-                      {formatDate(new Date(dateStr))}
-                    </span>
+                  <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+                    <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'stretch' }}>
+                      <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#292524', marginBottom: '8px' }}>
+                        {formatDate(new Date(dateStr))}
+                      </span>
+                      <div style={{ borderBottom: '1px solid #78716c' }}></div>
+                    </div>
                   </div>
 
                   {/* PA and Gunman details */}
