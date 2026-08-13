@@ -715,7 +715,7 @@ const CalendarModal = ({ isOpen, onClose, selectedDate, onSelectDate }) => {
   );
 };
 
-const PrintModal = ({ isOpen, onClose, onPrint, viewMode, currentDate }) => {
+const PrintModal = ({ isOpen, onClose, onPrint, viewMode, currentDate, programsCache, inChargeCache }) => {
   const [step, setStep] = useState('mode'); // 'mode', 'dates', 'programs'
   const [selectedDates, setSelectedDates] = useState([]);
   const [viewDate, setViewDate] = useState(new Date());
@@ -767,9 +767,12 @@ const PrintModal = ({ isOpen, onClose, onPrint, viewMode, currentDate }) => {
       const allSelectedIds = [];
 
       await Promise.all(dates.map(async (dStr) => {
-        const q = query(collection(db, 'programs'), where('date', '==', dStr));
-        const pSnap = await getDocs(q);
-        const progs = pSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let progs = programsCache?.[dStr];
+        if (!progs) {
+          const q = query(collection(db, 'programs'), where('date', '==', dStr));
+          const pSnap = await getDocs(q);
+          progs = pSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
         
         const relevant = progs.filter(p => {
           if (viewMode === 'schedule') return !p.type || p.type === 'schedule';
@@ -784,9 +787,14 @@ const PrintModal = ({ isOpen, onClose, onPrint, viewMode, currentDate }) => {
         programsByDate[dStr] = relevant;
         allSelectedIds.push(...relevant.map(p => p.id));
 
-        const icSnap = await getDoc(doc(db, 'in_charge', dStr));
-        if (icSnap.exists()) {
-          inChargeByDate[dStr] = icSnap.data();
+        let icData = inChargeCache?.[dStr];
+        if (icData === undefined) {
+          const icSnap = await getDoc(doc(db, 'in_charge', dStr));
+          icData = icSnap.exists() ? icSnap.data() : null;
+        }
+
+        if (icData) {
+          inChargeByDate[dStr] = icData;
         } else {
           inChargeByDate[dStr] = {
             pa: { type: 'Adv Hisham', name: 'Adv Hisham', phone: '9744660071' },
@@ -2264,6 +2272,8 @@ User said: "${transcript}"`
           onPrint={handlePdfExport}
           viewMode={viewMode}
           currentDate={currentDate}
+          programsCache={programsCache}
+          inChargeCache={inChargeCache}
         />
 
         <InChargeModal 
