@@ -921,9 +921,9 @@ const ProgramCard = ({ program }) => {
         </p>
         
         {program.coName && (
-          <div className="mt-2 flex items-center text-sm">
-            <IconUser size={14} className={`mr-1.5 flex-shrink-0 ${program.completed ? 'text-stone-400' : 'text-[#4a3b32]'}`} />
-            <span className={`truncate font-medium ${program.completed ? 'text-stone-400' : 'text-[#4a3b32]'}`}>
+          <div className="mt-2 flex items-start text-sm">
+            <IconUser size={14} className={`mr-1.5 flex-shrink-0 mt-[3px] ${program.completed ? 'text-stone-400' : 'text-[#4a3b32]'}`} />
+            <span className={`font-medium break-words leading-tight ${program.completed ? 'text-stone-400' : 'text-[#4a3b32]'}`}>
               {program.coName}
             </span>
           </div>
