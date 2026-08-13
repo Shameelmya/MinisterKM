@@ -1310,6 +1310,96 @@ const SettingsModal = ({ isOpen, onClose }) => {
   );
 };
 
+const InChargeModal = ({ isOpen, onClose, inChargeInfo, setInChargeInfo }) => {
+  const [localInfo, setLocalInfo] = useState(inChargeInfo);
+
+  useEffect(() => {
+    if (isOpen) setLocalInfo(inChargeInfo);
+  }, [isOpen, inChargeInfo]);
+
+  const handleSave = () => {
+    setInChargeInfo(localInfo);
+    onClose();
+  };
+
+  const updateField = (section, field, value) => {
+    setLocalInfo(prev => ({
+      ...prev,
+      [section]: { ...prev[section], [field]: value }
+    }));
+  };
+
+  const paOptions = [
+    { label: 'Adv Hisham', name: 'Adv Hisham', phone: '9744660071' },
+    { label: 'Other', name: '', phone: '' }
+  ];
+
+  const gunmanOptions = [
+    { label: 'Yasar', name: 'Yasar', phone: '9947700895' },
+    { label: 'Lineesh', name: 'Lineesh', phone: '9562640263' },
+    { label: 'Shaji', name: 'Shaji', phone: '9495179483' },
+    { label: 'Other', name: '', phone: '' }
+  ];
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="In Charge Details">
+      <div className="space-y-6">
+        {/* PA Section */}
+        <div>
+          <label className="block text-sm font-bold text-stone-700 mb-2">PA In Charge</label>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {paOptions.map(opt => (
+              <label key={opt.label} className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all ${localInfo.pa.type === opt.label ? 'border-[#4a3b32] bg-stone-50' : 'border-stone-200'}`}>
+                <input 
+                  type="radio" 
+                  checked={localInfo.pa.type === opt.label} 
+                  onChange={() => setLocalInfo(prev => ({ ...prev, pa: { type: opt.label, name: opt.name, phone: opt.phone } }))}
+                  className="w-4 h-4 text-[#4a3b32] focus:ring-[#4a3b32] border-stone-300"
+                />
+                <span className={`ml-3 text-sm font-medium ${localInfo.pa.type === opt.label ? 'text-[#4a3b32]' : 'text-stone-700'}`}>{opt.label}</span>
+              </label>
+            ))}
+          </div>
+          {localInfo.pa.type === 'Other' && (
+            <div className="flex gap-2">
+              <input type="text" placeholder="Name" value={localInfo.pa.name} onChange={e => updateField('pa', 'name', e.target.value)} className="flex-1 px-3 py-2 border border-stone-200 rounded-lg text-sm focus:border-[#4a3b32] outline-none" />
+              <input type="tel" placeholder="Phone" value={localInfo.pa.phone} onChange={e => updateField('pa', 'phone', e.target.value)} className="flex-1 px-3 py-2 border border-stone-200 rounded-lg text-sm focus:border-[#4a3b32] outline-none" />
+            </div>
+          )}
+        </div>
+
+        {/* Gunman Section */}
+        <div>
+          <label className="block text-sm font-bold text-stone-700 mb-2">Gunman In Charge</label>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {gunmanOptions.map(opt => (
+              <label key={opt.label} className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all ${localInfo.gunman.type === opt.label ? 'border-[#4a3b32] bg-stone-50' : 'border-stone-200'}`}>
+                <input 
+                  type="radio" 
+                  checked={localInfo.gunman.type === opt.label} 
+                  onChange={() => setLocalInfo(prev => ({ ...prev, gunman: { type: opt.label, name: opt.name, phone: opt.phone } }))}
+                  className="w-4 h-4 text-[#4a3b32] focus:ring-[#4a3b32] border-stone-300"
+                />
+                <span className={`ml-3 text-sm font-medium ${localInfo.gunman.type === opt.label ? 'text-[#4a3b32]' : 'text-stone-700'}`}>{opt.label}</span>
+              </label>
+            ))}
+          </div>
+          {localInfo.gunman.type === 'Other' && (
+            <div className="flex gap-2">
+              <input type="text" placeholder="Name" value={localInfo.gunman.name} onChange={e => updateField('gunman', 'name', e.target.value)} className="flex-1 px-3 py-2 border border-stone-200 rounded-lg text-sm focus:border-[#4a3b32] outline-none" />
+              <input type="tel" placeholder="Phone" value={localInfo.gunman.phone} onChange={e => updateField('gunman', 'phone', e.target.value)} className="flex-1 px-3 py-2 border border-stone-200 rounded-lg text-sm focus:border-[#4a3b32] outline-none" />
+            </div>
+          )}
+        </div>
+
+        <button onClick={handleSave} className="w-full py-3.5 bg-[#4a3b32] text-white rounded-xl font-medium hover:bg-[#3a2e26] transition-colors">
+          Save Details
+        </button>
+      </div>
+    </Modal>
+  );
+};
+
 const MainApp = () => {
   const { user, logout } = useContext(AuthContext);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -1341,6 +1431,13 @@ const MainApp = () => {
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [voicePrefill, setVoicePrefill] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
+  
+  const [inChargeInfo, setInChargeInfo] = useState({
+    pa: { type: 'Adv Hisham', name: 'Adv Hisham', phone: '9744660071' },
+    gunman: { type: '', name: '', phone: '' }
+  });
+  const [isInChargeOpen, setIsInChargeOpen] = useState(false);
+
   const recognitionRef = useRef(null);
   const transcriptRef = useRef('');
   const isPointerDownRef = useRef(false);
@@ -1357,12 +1454,13 @@ const MainApp = () => {
       if (hash !== '#edit' && editProgram) setEditProgram(null);
       if (hash !== '#calendar' && isCalendarOpen) setIsCalendarOpen(false);
       if (hash !== '#export' && isPrintOpen) setIsPrintOpen(false);
+      if (hash !== '#incharge' && isInChargeOpen) setIsInChargeOpen(false);
       if (hash !== '#settings' && isSettingsOpen) setIsSettingsOpen(false);
       if (hash !== '#logout' && isLogoutConfirmOpen) setIsLogoutConfirmOpen(false);
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [isAddOpen, editProgram, isCalendarOpen, isPrintOpen, isSettingsOpen, isLogoutConfirmOpen]);
+  }, [isAddOpen, editProgram, isCalendarOpen, isPrintOpen, isInChargeOpen, isSettingsOpen, isLogoutConfirmOpen]);
 
   const openModal = (hash, setter, value = true) => {
     setter(value);
@@ -1829,6 +1927,14 @@ User said: "${transcript}"`
               {displayPrograms.length > 0 && <span className="ml-1 text-stone-400">({displayPrograms.filter(p => p.completed).length} completed)</span>}
             </div>
 
+            <button
+              onClick={() => openModal('#incharge', setIsInChargeOpen)}
+              className="flex items-center h-6 px-3 bg-[#4a3b32]/10 border border-[#4a3b32]/20 rounded-full shadow-sm hover:bg-[#4a3b32]/20 transition-colors text-[10px] font-medium text-[#4a3b32] mx-auto"
+            >
+              <IconUser size={12} className="mr-1" />
+              In Charge
+            </button>
+
             {permissions.canViewPriority && displayPrograms.length > 0 && viewMode === 'schedule' && (
               <button
                 onClick={() => setSortBy(prev => prev === 'time' ? 'priority' : 'time')}
@@ -1990,6 +2096,13 @@ User said: "${transcript}"`
           programs={programs}
         />
 
+        <InChargeModal 
+          isOpen={isInChargeOpen}
+          onClose={() => closeModal('#incharge', setIsInChargeOpen)}
+          inChargeInfo={inChargeInfo}
+          setInChargeInfo={setInChargeInfo}
+        />
+
         <CalendarModal 
           isOpen={isCalendarOpen} 
           onClose={() => closeModal('#calendar', setIsCalendarOpen)} 
@@ -2036,6 +2149,36 @@ User said: "${transcript}"`
                 {printConfig.viewMode === 'todo' ? 'To-Do List' : 'Programme Schedule'} • {formatDate(currentDate)}
               </h3>
             </div>
+
+            {/* In Charge Details Header (Only in Schedule View) */}
+            {printConfig.viewMode === 'schedule' && (inChargeInfo.pa.name || inChargeInfo.gunman.name) && (
+              <div className="mb-6 flex justify-between items-start text-sm border border-stone-200 rounded-lg p-4 bg-stone-50">
+                {inChargeInfo.pa.name && (
+                  <div>
+                    <span className="font-bold text-stone-800">PA In Charge:</span><br/>
+                    <span className="text-stone-700">{inChargeInfo.pa.name}</span>
+                    {inChargeInfo.pa.phone && (
+                      <>
+                        <br/>
+                        Mob: <a href={`tel:${inChargeInfo.pa.phone}`} className="text-blue-600 no-underline font-medium">{inChargeInfo.pa.phone}</a>
+                      </>
+                    )}
+                  </div>
+                )}
+                {inChargeInfo.gunman.name && (
+                  <div className="text-right">
+                    <span className="font-bold text-stone-800">Gunman In Charge:</span><br/>
+                    <span className="text-stone-700">{inChargeInfo.gunman.name}</span>
+                    {inChargeInfo.gunman.phone && (
+                      <>
+                        <br/>
+                        Mob: <a href={`tel:${inChargeInfo.gunman.phone}`} className="text-blue-600 no-underline font-medium">{inChargeInfo.gunman.phone}</a>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Table Container */}
             <div className="mb-8">
