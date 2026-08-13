@@ -2171,32 +2171,34 @@ User said: "${transcript}"`
 
             {/* In Charge Details Header (Only in Schedule View) */}
             {printConfig.viewMode === 'schedule' && (inChargeInfo.pa.name || inChargeInfo.gunman.name) && (
-              <table className="w-full mb-6 border border-stone-300 bg-stone-50">
+              <table style={{ width: '100%', marginBottom: '20px', border: '1px solid #d6d3d1', backgroundColor: '#fafaf9', borderCollapse: 'collapse' }}>
                 <tbody>
                   <tr>
-                    <td className="p-4 text-left align-top w-1/2">
+                    <td style={{ padding: '14px 16px', textAlign: 'left', verticalAlign: 'top', width: '50%' }}>
                       {inChargeInfo.pa.name && (
                         <div>
-                          <span className="font-bold text-stone-800 text-sm">PA In Charge:</span><br/>
-                          <span className="text-stone-700 text-sm">{inChargeInfo.pa.name}</span>
+                          <span style={{ fontWeight: 'bold', color: '#292524', fontSize: '13px' }}>PA In Charge:</span><br/>
+                          <span style={{ color: '#44403c', fontSize: '13px' }}>{inChargeInfo.pa.name}</span>
                           {inChargeInfo.pa.phone && (
                             <>
                               <br/>
-                              <span className="text-sm">Mob: </span><a href={`tel:${inChargeInfo.pa.phone}`} className="text-blue-600 no-underline font-medium text-sm">{inChargeInfo.pa.phone}</a>
+                              <span style={{ fontSize: '13px', color: '#44403c' }}>Mob: </span>
+                              <a href={`tel:${inChargeInfo.pa.phone}`} style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600', fontSize: '13px' }}>{inChargeInfo.pa.phone}</a>
                             </>
                           )}
                         </div>
                       )}
                     </td>
-                    <td className="p-4 text-right align-top w-1/2">
+                    <td style={{ padding: '14px 16px', textAlign: 'right', verticalAlign: 'top', width: '50%' }}>
                       {inChargeInfo.gunman.name && (
                         <div>
-                          <span className="font-bold text-stone-800 text-sm">Gunman In Charge:</span><br/>
-                          <span className="text-stone-700 text-sm">{inChargeInfo.gunman.name}</span>
+                          <span style={{ fontWeight: 'bold', color: '#292524', fontSize: '13px' }}>Gunman In Charge:</span><br/>
+                          <span style={{ color: '#44403c', fontSize: '13px' }}>{inChargeInfo.gunman.name}</span>
                           {inChargeInfo.gunman.phone && (
                             <>
                               <br/>
-                              <span className="text-sm">Mob: </span><a href={`tel:${inChargeInfo.gunman.phone}`} className="text-blue-600 no-underline font-medium text-sm">{inChargeInfo.gunman.phone}</a>
+                              <span style={{ fontSize: '13px', color: '#44403c' }}>Mob: </span>
+                              <a href={`tel:${inChargeInfo.gunman.phone}`} style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600', fontSize: '13px' }}>{inChargeInfo.gunman.phone}</a>
                             </>
                           )}
                         </div>
