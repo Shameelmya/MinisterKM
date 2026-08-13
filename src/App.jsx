@@ -2352,9 +2352,11 @@ User said: "${transcript}"`
               return (
                 <div key={dateStr} className="mb-8" style={{ pageBreakInside: 'avoid' }}>
                   {/* Date Header */}
-                  <h4 style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold', color: '#292524', marginBottom: '8px' }}>
-                    {formatDate(new Date(dateStr))}
-                  </h4>
+                  <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#292524', borderBottom: '1px solid #78716c', paddingBottom: '4px' }}>
+                      {formatDate(new Date(dateStr))}
+                    </span>
+                  </div>
 
                   {/* PA and Gunman details */}
                   {printConfig.viewMode === 'schedule' && inCharge && (inCharge.pa?.name || inCharge.gunman?.name) && (
