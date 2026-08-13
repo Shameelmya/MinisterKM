@@ -889,11 +889,12 @@ const PrintModal = ({ isOpen, onClose, onPrint, viewMode, currentDate, programsC
               if (!d) return <div key={i} className="h-10" />;
               const dStr = getLocalDateString(d);
               const isSelected = selectedDates.includes(dStr);
+              const isCurrentDate = dStr === getLocalDateString(currentDate || new Date());
               return (
                 <button
                   key={i}
                   onClick={() => toggleDate(d)}
-                  className={`h-10 relative w-full rounded-xl flex items-center justify-center text-sm font-medium transition-colors ${isSelected ? 'bg-[#4a3b32] text-white shadow-md' : 'text-stone-700 hover:bg-stone-100'}`}
+                  className={`h-10 relative w-full rounded-xl flex items-center justify-center text-sm font-medium transition-colors ${isSelected ? 'bg-[#4a3b32] text-white shadow-md' : isCurrentDate ? 'text-[#4a3b32] border-2 border-[#4a3b32] bg-white' : 'text-stone-700 hover:bg-stone-100'}`}
                 >
                   {d.getDate()}
                 </button>
