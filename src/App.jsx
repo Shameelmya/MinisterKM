@@ -2359,16 +2359,16 @@ User said: "${transcript}"`
                   {/* PA and Gunman details */}
                   {printConfig.viewMode === 'schedule' && inCharge && (inCharge.pa?.name || inCharge.gunman?.name) && (
                     <div style={{ marginBottom: '16px' }}>
-                      <table style={{ margin: '0 auto', textAlign: 'left', borderSpacing: '0 6px', borderCollapse: 'separate' }}>
+                      <table style={{ margin: '0 auto', textAlign: 'left', borderSpacing: '0 2px', borderCollapse: 'separate' }}>
                         <tbody>
                           {inCharge.pa?.name && (
                             <tr>
-                              <td style={{ paddingRight: '24px' }}>
+                              <td style={{ paddingRight: '24px', verticalAlign: 'baseline' }}>
                                 <span style={{ fontWeight: 'normal', color: '#292524', fontSize: '12px' }}>PA in Charge : </span>
                                 <span style={{ fontWeight: 'bold', fontSize: '15px', color: '#44403c' }}>{inCharge.pa.name}</span>
                               </td>
                               {inCharge.pa.phone && (
-                                <td>
+                                <td style={{ verticalAlign: 'baseline' }}>
                                   <span style={{ fontWeight: 'normal', color: '#292524', fontSize: '12px' }}>Phone : </span>
                                   <a href={`tel:${inCharge.pa.phone}`} style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 'bold', fontSize: '15px' }}>{inCharge.pa.phone}</a>
                                 </td>
@@ -2377,12 +2377,12 @@ User said: "${transcript}"`
                           )}
                           {inCharge.gunman?.name && (
                             <tr>
-                              <td style={{ paddingRight: '24px' }}>
+                              <td style={{ paddingRight: '24px', verticalAlign: 'baseline' }}>
                                 <span style={{ fontWeight: 'normal', color: '#292524', fontSize: '12px' }}>Gun man in Charge : </span>
                                 <span style={{ fontWeight: 'bold', fontSize: '15px', color: '#44403c' }}>{inCharge.gunman.name}</span>
                               </td>
                               {inCharge.gunman.phone && (
-                                <td>
+                                <td style={{ verticalAlign: 'baseline' }}>
                                   <span style={{ fontWeight: 'normal', color: '#292524', fontSize: '12px' }}>Phone : </span>
                                   <a href={`tel:${inCharge.gunman.phone}`} style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 'bold', fontSize: '15px' }}>{inCharge.gunman.phone}</a>
                                 </td>
