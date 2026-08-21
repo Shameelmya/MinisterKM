@@ -2337,7 +2337,7 @@ User said: "${transcript}"`
             {/* Main Header */}
             <div className="mb-4 flex flex-col items-center border-b border-stone-200 pb-4">
               <h1 className="text-3xl font-bold tracking-tight text-[#4a3b32] mb-1.5">KM Shaji</h1>
-              <h2 className="text-base font-normal text-stone-600 mb-1">Hon. LSG Department Minister</h2>
+              <h2 className="text-base font-normal text-stone-600 mb-1">Hon. Minister of LSGD, Keralam</h2>
               <h3 className="text-lg font-bold text-stone-900">
                 {printConfig.viewMode === 'todo' ? 'To-Do List' : 'Programme Schedule'}
               </h3>
